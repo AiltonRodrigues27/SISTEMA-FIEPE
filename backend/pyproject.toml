@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "passe-backend"
+version = "0.1.0"
+description = "API do desafio Passe (SENAI/FIEPE) - mercado de jogadores de futebol ficticio"
+authors = ["Ailton Rodrigues"]
+packages = [{ include = "app" }]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.115.0"
+uvicorn = { extras = ["standard"], version = "^0.32.0" }
+sqlalchemy = "^2.0.0"
+psycopg = { extras = ["binary"], version = "^3.2.0" }
+alembic = "^1.13.0"
+pydantic-settings = "^2.5.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.0"
+httpx = "^0.27.0"
+ruff = "^0.7.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

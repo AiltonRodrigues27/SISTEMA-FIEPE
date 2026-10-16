@@ -1,0 +1,1 @@
+# Representa como os dados são armazenados e recuperados do banco de dados, incluindo consultas e operações de persistência.

@@ -1,3 +1,8 @@
+## Como trabalhamos (regra mais importante)
+
+1. **Mostrar antes de escrever.** Antes de criar ou alterar código, o Claude mostra na conversa exatamente o que vai gerar, arquivo por arquivo, e só grava no disco depois do "sim" explícito do Ailton.
+2. **A decisão é do Ailton.** O Claude debate opções, recomenda e aponta o trade-off. Não decide sozinho nem implementa uma escolha que o Ailton ainda não confirmou.
+
 ## Regras de código
 
 1. **Interfaces nas fronteiras, não em todo lugar.** `Protocol` (ou ABC quando precisar de comportamento compartilhado) em `ports/`, definido por quem consome. Onde não há fronteira (infra, outro módulo, algo que precisa ser trocado ou mockado), use o tipo concreto. Não crie interface, factory ou classe "porque Clean Code manda".
@@ -20,9 +25,24 @@
 18. **Poucos efeitos colaterais.** O nome da função anuncia o que ela faz. Nada de função `validar` que também grava.
 19. **Refatore continuamente.** Funcionando não é terminado. Ao tocar numa área, deixe-a melhor, mas em commit separado do da feature.
 
+## Arquitetura (Clean Architecture + Monólito Modular)
+
+1. **Regra de dependência.** Dependências sempre apontam para dentro: `adapters` conhece `domain`, nunca o contrário. `domain` não importa FastAPI, SQLAlchemy ou Pydantic.
+2. **Módulo é fatia vertical fechada.** Cada módulo (`players`, `clubs`, `market`, `league`) tem seu próprio `domain/application/ports/adapters` e não importa o interior de outro módulo. Comunicação entre módulos passa por uma porta explícita ou pela camada de aplicação — nunca acesso direto à entidade/tabela de outro módulo.
+3. **Caso de uso coordena, não absorve.** Cada ação da aplicação (`CreatePlayer`, `BuyPlayer`, `SellPlayer`, `PlayMatch`...) orquestra passos (buscar, validar, calcular, persistir, confirmar transação). Cálculo e invariante de negócio ficam no `domain`, não no caso de uso.
+4. **Entidade ≠ modelo de persistência ≠ schema de API.** Entidade de domínio representa a regra; modelo SQLAlchemy mapeia tabela; schema Pydantic valida I/O da API. Não funde os três quando isso gera acoplamento real. Converta na borda (adapter), sem criar conversão complexa que não agrega valor.
+5. **Porta é contrato de necessidade, não de time.** Caso de uso depende do que precisa fazer (`ports/`), adapter implementa com SQLAlchemy. Crie interface só quando protege uma fronteira real ou permite troca com benefício concreto — não por classe.
+6. **Injeção, não criação.** Dependência chega de fora (`Depends()` em produção, fake nos testes). Caso de uso nunca instancia seu próprio repositório.
+7. **Transação atômica onde a regra exige.** Compra, venda, partida e qualquer fluxo com múltiplas escritas confirmam ou revertem juntos. Transação do SQLAlchemy é suficiente; Unit of Work só se simplificar de verdade.
+8. **Erro por responsabilidade, não `HTTPException` espalhada.** `domain` detecta violação de regra; caso de uso decide o que fazer; adapter HTTP traduz para status (ex.: saldo insuficiente → 409); adapter de persistência traduz erro técnico de banco quando precisa. `domain` não conhece HTTP.
+9. **Teste na camada certa.** Unitário de `domain` (cálculo/regra, sem banco), de caso de uso (coordenação, com fake de porta), de integração (adapter contra Postgres real), de API/E2E (fluxo completo). Não depender só de E2E.
+10. **`shared/` não é depósito.** Só entra o que é realmente transversal (abstração de transação, tipo básico, infra comum). Regra de um módulo (ex.: comissão do mercado) continua nele; outros módulos acessam via interface, nunca copiando a fórmula.
+11. **Pasta não é arquitetura.** Ter `domain/application/ports/adapters` não garante nada se caso de uso tiver SQL direto, entidade conhecer FastAPI, adapter decidir regra, módulo acessar tabela de outro direto, ou interface existir sem necessidade. O que importa é direção de dependência e separação de responsabilidade.
+
 ## Testes
 
 Nada entra sem teste. O teste prova que a implementação está certa.
+
 - **Unitário:** `domain` e `service`, com fakes escritos à mão das portas (`Protocol`). Parametrizado com `pytest.mark.parametrize`. Rápidos, sem I/O.
 - **Integração:** adapters de banco contra Postgres real (testcontainers), com migrations aplicadas. Não use mock de banco para validar SQL.
 - **End-to-end:** a API de pé, requisições HTTP reais via `httpx.AsyncClient`/`TestClient`, banco real, cobrindo os fluxos principais de ponta a ponta.
@@ -32,9 +52,9 @@ Nada entra sem teste. O teste prova que a implementação está certa.
 
 ## Commits
 
-- **Commit por feature, e gradual:** cada commit faz uma coisa só e deixa o projeto compilando com testes passando.
+- **Graduais: uma unidade pequena por commit** (um arquivo, uma regra ou uma rota). O projeto compila e os testes passam em cada commit.
+- O barema exige pelo menos 10 commits por pasta (`backend/` e `frontend/`), em pelo menos 3 dias de envio diferentes, com no máximo metade de mensagens genéricas. Dar push ao fim de cada dia.
 - Refactor, formatação e feature não se misturam no mesmo commit.
-- Mensagem no padrão Conventional Commits, em português, no imperativo: `feat(scheduling): cria caso de uso de agendar consulta`.
-- Escopo = módulo (`identity`, `organization`, `customer`, `pet`, `scheduling`, `clinical`, `platform`) ou área (`ci`, `db`).
-- **Só commita quando o Ailton pedir.** Nunca `--no-verify`, nunca force push, nunca reescrever histórico publicado.
-
+- Mensagem em Conventional Commits, em português, no imperativo: `feat(players): cria cálculo do valor de mercado`.
+- Escopo = módulo (`players`, `clubs`, `market`, `league`) ou área (`infra`, `db`, `api`, `docs`).
+- Ao fim de cada entrega, o Claude sugere os cortes de commit e as mensagens. **Quem executa git é só o Ailton.** Nunca `--no-verify`, nunca force push em histórico publicado.

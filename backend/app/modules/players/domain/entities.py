@@ -1,0 +1,1 @@
+# Conceitos e regras de negócio relacionados a entidade Player
