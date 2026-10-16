@@ -3,7 +3,7 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-from app.infrastructure.database import settings
+from app.infrastructure.settings import settings
 from app.infrastructure.sqlalchemy_base import Base
 
 # Importar os models registra as tabelas em Base.metadata, que o Alembic usa para gerar migrations.

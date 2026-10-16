@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.exception_handlers import register_exception_handlers
 from app.api.router import api_router
-from app.infrastructure.database import settings
+from app.infrastructure.settings import settings
 
 app = FastAPI(
     title="Passe API",
