@@ -1,47 +1,29 @@
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import (
-    CHAR,
-    CheckConstraint,
-    DateTime,
-    ForeignKey,
-    Index,
-    Numeric,
-    String,
-    func,
-    text,
-)
+from sqlalchemy import CHAR, DateTime, ForeignKey, Index, Numeric, String, func, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.infrastructure.sqlalchemy_base import Base
 
 
-class ClubeModel(Base):
+class ClubModel(Base):
     __tablename__ = "clubes"
-    __table_args__ = (
-        CheckConstraint(
-            "formacao IN ('3-1', '2-2', '2-1-1', '1-2-1')", name="ck_clubes_formacao"
-        ),
-        Index("uq_clubes_nome_lower", text("lower(nome)"), unique=True),
-    )
+    __table_args__ = (Index("uq_clubes_nome_lower", text("lower(nome)"), unique=True),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    nome: Mapped[str] = mapped_column(String(60))
-    sigla: Mapped[str] = mapped_column(CHAR(3), unique=True)
-    caixa: Mapped[Decimal] = mapped_column(Numeric(12, 2), server_default="300.00")
-    formacao: Mapped[str | None] = mapped_column(String(5))
-    criado_em: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
+    name: Mapped[str] = mapped_column("nome", String(60))
+    acronym: Mapped[str] = mapped_column("sigla", CHAR(3), unique=True)
+    cash: Mapped[Decimal] = mapped_column("caixa", Numeric(12, 2), server_default="300.00")
+    formation: Mapped[str | None] = mapped_column("formacao", String(5))
+    created_at: Mapped[datetime] = mapped_column(
+        "criado_em", DateTime(timezone=True), server_default=func.now()
     )
 
 
-class ContratoModel(Base):
+class ContractModel(Base):
     __tablename__ = "contratos"
     __table_args__ = (
-        CheckConstraint(
-            "situacao IN ('ATIVO', 'ENCERRADO', 'RESCINDIDO')", name="ck_contratos_situacao"
-        ),
         Index(
             "uq_contratos_jogador_ativo",
             "jogador_id",
@@ -51,10 +33,10 @@ class ContratoModel(Base):
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    jogador_id: Mapped[int] = mapped_column(ForeignKey("jogadores.id"))
-    clube_id: Mapped[int] = mapped_column(ForeignKey("clubes.id"))
-    valor_compra: Mapped[Decimal] = mapped_column(Numeric(12, 2))
-    fidelidade_ate: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    situacao: Mapped[str] = mapped_column(String(12))
-    iniciado_em: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    encerrado_em: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    player_id: Mapped[int] = mapped_column("jogador_id", ForeignKey("jogadores.id"))
+    club_id: Mapped[int] = mapped_column("clube_id", ForeignKey("clubes.id"))
+    purchase_value: Mapped[Decimal] = mapped_column("valor_compra", Numeric(12, 2))
+    loyalty_until: Mapped[datetime] = mapped_column("fidelidade_ate", DateTime(timezone=True))
+    status: Mapped[str] = mapped_column("situacao", String(12))
+    started_at: Mapped[datetime] = mapped_column("iniciado_em", DateTime(timezone=True))
+    ended_at: Mapped[datetime | None] = mapped_column("encerrado_em", DateTime(timezone=True))

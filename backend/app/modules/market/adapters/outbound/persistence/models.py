@@ -1,28 +1,25 @@
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Numeric, String, func
+from sqlalchemy import DateTime, ForeignKey, Numeric, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.infrastructure.sqlalchemy_base import Base
 
 
-class TransacaoModel(Base):
+class TransactionModel(Base):
     __tablename__ = "transacoes"
-    __table_args__ = (
-        CheckConstraint("tipo IN ('COMPRA', 'VENDA')", name="ck_transacoes_tipo"),
-    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    clube_id: Mapped[int] = mapped_column(ForeignKey("clubes.id"))
-    jogador_id: Mapped[int] = mapped_column(ForeignKey("jogadores.id"))
-    nome_jogador: Mapped[str] = mapped_column(String(100))
-    tipo: Mapped[str] = mapped_column(String(6))
-    valor: Mapped[Decimal] = mapped_column(Numeric(12, 2))
-    taxa: Mapped[Decimal] = mapped_column(Numeric(12, 2))
-    multa: Mapped[Decimal] = mapped_column(Numeric(12, 2))
-    lucro: Mapped[Decimal | None] = mapped_column(Numeric(12, 2))
-    variacao_caixa: Mapped[Decimal] = mapped_column(Numeric(12, 2))
-    criado_em: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
+    club_id: Mapped[int] = mapped_column("clube_id", ForeignKey("clubes.id"))
+    player_id: Mapped[int] = mapped_column("jogador_id", ForeignKey("jogadores.id"))
+    player_name: Mapped[str] = mapped_column("nome_jogador", String(100))
+    type: Mapped[str] = mapped_column("tipo", String(6))
+    value: Mapped[Decimal] = mapped_column("valor", Numeric(12, 2))
+    fee: Mapped[Decimal] = mapped_column("taxa", Numeric(12, 2))
+    penalty: Mapped[Decimal] = mapped_column("multa", Numeric(12, 2))
+    profit: Mapped[Decimal | None] = mapped_column("lucro", Numeric(12, 2))
+    cash_change: Mapped[Decimal] = mapped_column("variacao_caixa", Numeric(12, 2))
+    created_at: Mapped[datetime] = mapped_column(
+        "criado_em", DateTime(timezone=True), server_default=func.now()
     )
