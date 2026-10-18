@@ -1,6 +1,6 @@
+from collections.abc import Sequence
 from decimal import Decimal
 
-from app.modules.players.domain.entities import Attributes
 from app.modules.players.domain.enums import PhysicalCondition, Position
 from app.shared.domain.rounding import round_half_up
 
@@ -38,7 +38,7 @@ BASE_VALUE_BANDS = (
 )
 
 
-def calculate_overall(position: Position, attributes: Attributes) -> int:
+def calculate_overall(position: Position, attributes: Sequence[int]) -> int:
     weights = OVERALL_WEIGHTS[position]
     weighted_sum = sum(value * weight for value, weight in zip(attributes, weights, strict=True))
     return int(round_half_up(Decimal(weighted_sum) / 100, 0))
