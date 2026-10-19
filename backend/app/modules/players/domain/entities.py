@@ -3,7 +3,11 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import NamedTuple, Self
 
-from app.modules.players.domain.calculations import calculate_base_value, calculate_overall
+from app.modules.players.domain.calculations import (
+    calculate_base_value,
+    calculate_market_value,
+    calculate_overall,
+)
 from app.modules.players.domain.enums import PhysicalCondition, Position
 from app.modules.players.domain.errors import (
     AgeCannotDecrease,
@@ -56,6 +60,14 @@ class Player:
     @property
     def is_free(self) -> bool:
         return self.club_id is None
+
+    @property
+    def overall(self) -> int:
+        return calculate_overall(self.position, self.attributes)
+
+    @property
+    def market_value(self) -> Decimal:
+        return calculate_market_value(self.base_value, self.condition, self.agility, self.age)
 
     @classmethod
     def register(cls, registration: PlayerRegistration) -> Self:

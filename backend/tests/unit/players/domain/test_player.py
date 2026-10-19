@@ -240,3 +240,17 @@ def test_ensure_can_be_deleted_accepts_free_player() -> None:
 def test_ensure_can_be_deleted_rejects_player_with_club() -> None:
     with pytest.raises(PlayerHasClub):
         build_player(club_id=1).ensure_can_be_deleted()
+
+
+def test_overall_is_calculated_from_position_and_attributes() -> None:
+    assert build_player().overall == 75
+
+
+def test_market_value_follows_the_current_condition() -> None:
+    player = build_player()
+
+    assert player.market_value == Decimal("40.00")
+
+    player.change_condition(MAL)
+
+    assert player.market_value == Decimal("37.00")
