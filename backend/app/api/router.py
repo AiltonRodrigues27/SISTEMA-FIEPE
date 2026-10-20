@@ -1,3 +1,8 @@
 from fastapi import APIRouter
 
+from app.modules.clubs.adapters.inbound.http.routes import router as clubs_router
+from app.modules.players.adapters.inbound.http.routes import router as players_router
+
 api_router = APIRouter(prefix="/api/v1")
+api_router.include_router(players_router)
+api_router.include_router(clubs_router)

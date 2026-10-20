@@ -142,11 +142,19 @@ def test_list_filters_by_age_range_inclusive(client):
 
 def test_list_filters_free_and_club(client):
     create(client, "Ana Lima")
+    club = client.post("/api/v1/clubs", json={"name": "Águias FC", "acronym": "AGU"}).json()
 
     assert names_of(client, "?free=true") == ["Ana Lima"]
     assert names_of(client, "?free=false") == []
-    assert names_of(client, "?club_id=1") == []
-    assert names_of(client, "?free=false&club_id=1") == []
+    assert names_of(client, f"?club_id={club['id']}") == []
+    assert names_of(client, f"?free=false&club_id={club['id']}") == []
+
+
+def test_list_returns_404_for_a_club_that_does_not_exist(client):
+    response = client.get(f"{PLAYERS_URL}?club_id=999")
+
+    assert response.status_code == 404
+    assert response.json() == {"message": "Clube não encontrado."}
 
 
 def test_list_filters_and_sorts_by_market_value_not_base_value(client):
