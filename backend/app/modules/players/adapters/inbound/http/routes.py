@@ -8,21 +8,33 @@ from app.modules.players.adapters.inbound.http.dependencies import (
     build_create_player,
     build_delete_player,
     build_get_player,
+    build_list_players,
     build_update_player,
 )
+from app.modules.players.adapters.inbound.http.list_query import get_list_players_query
 from app.modules.players.adapters.inbound.http.schemas import (
     ChangeConditionRequest,
     CreatePlayerRequest,
     PlayerResponse,
+    PlayersPageResponse,
     UpdatePlayerRequest,
 )
 from app.modules.players.application.change_player_condition import ChangePlayerCondition
 from app.modules.players.application.create_player import CreatePlayer
 from app.modules.players.application.delete_player import DeletePlayer
 from app.modules.players.application.get_player import GetPlayer
+from app.modules.players.application.list_players import ListPlayers, ListPlayersQuery
 from app.modules.players.application.update_player import UpdatePlayer
 
 router = APIRouter(prefix="/players", tags=["Jogadores"])
+
+
+@router.get("")
+def list_players(
+    query: Annotated[ListPlayersQuery, Depends(get_list_players_query)],
+    use_case: Annotated[ListPlayers, Depends(build_list_players)],
+) -> PlayersPageResponse:
+    return PlayersPageResponse.from_page(use_case.execute(query))
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)

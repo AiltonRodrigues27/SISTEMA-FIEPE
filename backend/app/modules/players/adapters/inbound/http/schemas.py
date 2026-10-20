@@ -5,9 +5,11 @@ from typing import Annotated, Self
 
 from pydantic import AfterValidator, BaseModel, BeforeValidator, Field
 
+from app.modules.players.application.list_players import PlayersPage
 from app.modules.players.application.update_player import PlayerProfileChanges
 from app.modules.players.domain.entities import Attributes, Player, PlayerRegistration
 from app.modules.players.domain.enums import PhysicalCondition, Position
+from app.shared.domain.text import clean_text
 
 MIN_NAME_LENGTH = 3
 MAX_NAME_LENGTH = 100
@@ -29,15 +31,12 @@ def _has_letter(word: str) -> bool:
 
 
 def _clean_player_name(value: str) -> str:
-    if any(unicodedata.category(char) == "Cc" for char in value):
-        raise ValueError("não pode ter caracteres de controle")
-    parts = [part for part in value.split(" ") if part]
-    name = " ".join(parts)
+    name = clean_text(value)
     if not MIN_NAME_LENGTH <= len(name) <= MAX_NAME_LENGTH:
         raise ValueError(f"deve ter de {MIN_NAME_LENGTH} a {MAX_NAME_LENGTH} caracteres")
     if any(char in string.digits for char in name):
         raise ValueError("não pode ter dígitos")
-    if sum(_has_letter(part) for part in parts) < MIN_NAME_WORDS:
+    if sum(_has_letter(part) for part in name.split(" ")) < MIN_NAME_WORDS:
         raise ValueError(f"deve ter pelo menos {MIN_NAME_WORDS} palavras")
     return name
 
@@ -135,4 +134,28 @@ class PlayerResponse(BaseModel):
             potential=player.potential,
             overall=player.overall,
             club_id=player.club_id,
+        )
+
+
+class PageMeta(BaseModel):
+    page: int
+    limit: int
+    total_items: int
+    total_pages: int
+
+
+class PlayersPageResponse(BaseModel):
+    data: list[PlayerResponse]
+    meta: PageMeta
+
+    @classmethod
+    def from_page(cls, page: PlayersPage) -> Self:
+        return cls(
+            data=[PlayerResponse.from_entity(player) for player in page.players],
+            meta=PageMeta(
+                page=page.page,
+                limit=page.limit,
+                total_items=page.total_items,
+                total_pages=page.total_pages,
+            ),
         )

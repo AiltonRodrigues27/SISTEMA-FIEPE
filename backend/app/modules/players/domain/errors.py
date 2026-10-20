@@ -31,3 +31,7 @@ class PlayerNotFree(ConflictError):
 
 class PlayerIsFree(ConflictError):
     """Jogador livre não pode ser vendido."""
+
+
+class InvalidListQuery(InvalidDataError):
+    """Parâmetro de listagem inválido ou combinação contraditória de filtros."""

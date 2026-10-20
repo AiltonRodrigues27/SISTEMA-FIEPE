@@ -12,6 +12,7 @@ from app.modules.players.application.change_player_condition import ChangePlayer
 from app.modules.players.application.create_player import CreatePlayer
 from app.modules.players.application.delete_player import DeletePlayer
 from app.modules.players.application.get_player import GetPlayer
+from app.modules.players.application.list_players import ListPlayers
 from app.modules.players.application.update_player import UpdatePlayer
 
 
@@ -21,6 +22,10 @@ def build_create_player(session: Annotated[Session, Depends(get_db)]) -> CreateP
 
 def build_get_player(session: Annotated[Session, Depends(get_db)]) -> GetPlayer:
     return GetPlayer(SqlAlchemyPlayerRepository(session))
+
+
+def build_list_players(session: Annotated[Session, Depends(get_db)]) -> ListPlayers:
+    return ListPlayers(SqlAlchemyPlayerRepository(session))
 
 
 def build_update_player(session: Annotated[Session, Depends(get_db)]) -> UpdatePlayer:

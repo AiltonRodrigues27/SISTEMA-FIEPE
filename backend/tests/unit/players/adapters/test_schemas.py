@@ -5,8 +5,10 @@ from app.modules.players.adapters.inbound.http.schemas import (
     ChangeConditionRequest,
     CreatePlayerRequest,
     PlayerResponse,
+    PlayersPageResponse,
     UpdatePlayerRequest,
 )
+from app.modules.players.application.list_players import PlayersPage
 from app.modules.players.application.update_player import PlayerProfileChanges
 from app.modules.players.domain.entities import Attributes, Player, PlayerRegistration
 from app.modules.players.domain.enums import PhysicalCondition, Position
@@ -211,3 +213,19 @@ def test_response_carries_calculated_fields_as_numbers() -> None:
     assert response.market_value == 40.0
     assert response.condition is PhysicalCondition.APTO
     assert response.club_id is None
+
+
+def test_page_response_has_the_players_and_the_meta() -> None:
+    player = Player.register(CreatePlayerRequest.model_validate(VALID).to_registration())
+    player.id = 1
+    page = PlayersPage(players=[player], page=2, limit=10, total_items=11)
+
+    response = PlayersPageResponse.from_page(page)
+
+    assert [item.id for item in response.data] == [1]
+    assert response.meta.model_dump() == {
+        "page": 2,
+        "limit": 10,
+        "total_items": 11,
+        "total_pages": 2,
+    }
