@@ -13,6 +13,12 @@ class PlayerRepository(Protocol):
     def list_active(self) -> list[Player]:
         """Devolve todos os jogadores ativos, sem os excluídos, em qualquer ordem."""
 
+    def list_by_club(self, club_id: int) -> list[Player]:
+        """Devolve os jogadores ativos do elenco de um clube, em qualquer ordem."""
+
+    def list_in_clubs(self) -> list[Player]:
+        """Devolve os jogadores ativos que têm clube, de qualquer clube."""
+
     def update(self, player: Player) -> None:
         """Grava as mudanças de um jogador que já existe."""
 

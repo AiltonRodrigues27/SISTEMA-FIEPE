@@ -33,5 +33,9 @@ class PlayerIsFree(ConflictError):
     """Jogador livre não pode ser vendido."""
 
 
+class ClubFilterNotFound(NotFoundError):
+    """O filtro club_id aponta para um clube que não existe."""
+
+
 class InvalidListQuery(InvalidDataError):
     """Parâmetro de listagem inválido ou combinação contraditória de filtros."""

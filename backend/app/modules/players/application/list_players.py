@@ -1,7 +1,9 @@
 from dataclasses import dataclass
 
 from app.modules.players.domain.entities import Player
+from app.modules.players.domain.errors import ClubFilterNotFound
 from app.modules.players.domain.listing import PlayerFilters, SortKey, matches, sort_players
+from app.modules.players.ports.club_lookup import ClubLookup
 from app.modules.players.ports.repositories import PlayerRepository
 
 
@@ -26,10 +28,14 @@ class PlayersPage:
 
 
 class ListPlayers:
-    def __init__(self, players: PlayerRepository) -> None:
+    def __init__(self, players: PlayerRepository, clubs: ClubLookup) -> None:
         self._players = players
+        self._clubs = clubs
 
     def execute(self, query: ListPlayersQuery) -> PlayersPage:
+        club_id = query.filters.club_id
+        if club_id is not None and not self._clubs.exists(club_id):
+            raise ClubFilterNotFound("Clube não encontrado.")
         found = [player for player in self._players.list_active() if matches(player, query.filters)]
         ordered = sort_players(found, query.sort)
         start = (query.page - 1) * query.limit

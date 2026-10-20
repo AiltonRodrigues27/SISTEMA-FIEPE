@@ -32,6 +32,18 @@ class SqlAlchemyPlayerRepository(PlayerRepository):
         statement = select(PlayerModel).where(PlayerModel.deleted_at.is_(None))
         return [_to_entity(model) for model in self._session.scalars(statement)]
 
+    def list_by_club(self, club_id: int) -> list[Player]:
+        statement = select(PlayerModel).where(
+            PlayerModel.deleted_at.is_(None), PlayerModel.club_id == club_id
+        )
+        return [_to_entity(model) for model in self._session.scalars(statement)]
+
+    def list_in_clubs(self) -> list[Player]:
+        statement = select(PlayerModel).where(
+            PlayerModel.deleted_at.is_(None), PlayerModel.club_id.is_not(None)
+        )
+        return [_to_entity(model) for model in self._session.scalars(statement)]
+
     def update(self, player: Player) -> None:
         model = self._session.get(PlayerModel, player.id)
         if model is None:

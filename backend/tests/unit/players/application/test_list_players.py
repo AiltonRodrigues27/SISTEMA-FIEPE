@@ -6,6 +6,7 @@ import pytest
 from app.modules.players.application.list_players import ListPlayers, ListPlayersQuery
 from app.modules.players.domain.entities import Player
 from app.modules.players.domain.enums import Position
+from app.modules.players.domain.errors import ClubFilterNotFound
 from app.modules.players.domain.listing import PlayerFilters, SortKey
 
 DEFAULT_QUERY = ListPlayersQuery(filters=PlayerFilters(), sort=(SortKey.NAME,), page=1, limit=10)
@@ -31,11 +32,13 @@ def add_23_players(player_repository, registration) -> None:
     ],
 )
 def test_list_players_paginates_after_searching(
-    player_repository, registration, limit, page, expected_items, expected_pages
+    player_repository, club_lookup, registration, limit, page, expected_items, expected_pages
 ) -> None:
     add_23_players(player_repository, registration)
 
-    result = ListPlayers(player_repository).execute(replace(DEFAULT_QUERY, page=page, limit=limit))
+    result = ListPlayers(player_repository, club_lookup).execute(
+        replace(DEFAULT_QUERY, page=page, limit=limit)
+    )
 
     assert len(result.players) == expected_items
     assert result.total_items == 23
@@ -43,31 +46,57 @@ def test_list_players_paginates_after_searching(
     assert (result.page, result.limit) == (page, limit)
 
 
-def test_list_players_without_players_has_zero_pages(player_repository) -> None:
-    result = ListPlayers(player_repository).execute(DEFAULT_QUERY)
+def test_list_players_without_players_has_zero_pages(player_repository, club_lookup) -> None:
+    result = ListPlayers(player_repository, club_lookup).execute(DEFAULT_QUERY)
 
     assert result.players == []
     assert result.total_items == 0
     assert result.total_pages == 0
 
 
-def test_list_players_counts_all_matches_not_only_the_page(player_repository, registration) -> None:
+def test_list_players_counts_all_matches_not_only_the_page(
+    player_repository, club_lookup, registration
+) -> None:
     add_23_players(player_repository, registration)
     for letter in "XYZUV":
         add_player(player_repository, registration, f"Atacante {letter}", position=Position.ATA)
     query = replace(DEFAULT_QUERY, filters=PlayerFilters(position=Position.ATA), page=3, limit=2)
 
-    result = ListPlayers(player_repository).execute(query)
+    result = ListPlayers(player_repository, club_lookup).execute(query)
 
     assert len(result.players) == 1
     assert result.total_items == 5
     assert result.total_pages == 3
 
 
-def test_list_players_orders_before_paginating(player_repository, registration) -> None:
+def test_list_players_orders_before_paginating(
+    player_repository, club_lookup, registration
+) -> None:
     add_23_players(player_repository, registration)
 
-    result = ListPlayers(player_repository).execute(replace(DEFAULT_QUERY, page=2, limit=10))
+    result = ListPlayers(player_repository, club_lookup).execute(
+        replace(DEFAULT_QUERY, page=2, limit=10)
+    )
 
     expected = [f"Jogador {letter}" for letter in string.ascii_uppercase[10:20]]
     assert [player.name for player in result.players] == expected
+
+
+def test_list_players_filters_by_an_existing_club(
+    player_repository, club_lookup, registration
+) -> None:
+    in_club = add_player(player_repository, registration, "Ana Lima")
+    in_club.club_id = 2
+    add_player(player_repository, registration, "Beto Souza")
+    query = replace(DEFAULT_QUERY, filters=PlayerFilters(club_id=2))
+
+    result = ListPlayers(player_repository, club_lookup).execute(query)
+
+    assert [player.name for player in result.players] == ["Ana Lima"]
+
+
+def test_list_players_rejects_a_club_that_does_not_exist(player_repository, club_lookup) -> None:
+    query = replace(DEFAULT_QUERY, filters=PlayerFilters(club_id=999))
+
+    with pytest.raises(ClubFilterNotFound):
+        ListPlayers(player_repository, club_lookup).execute(query)

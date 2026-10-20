@@ -21,6 +21,12 @@ class InMemoryPlayerRepository:
     def list_active(self) -> list[Player]:
         return list(self.stored.values())
 
+    def list_by_club(self, club_id: int) -> list[Player]:
+        return [player for player in self.stored.values() if player.club_id == club_id]
+
+    def list_in_clubs(self) -> list[Player]:
+        return [player for player in self.stored.values() if player.club_id is not None]
+
     def update(self, player: Player) -> None:
         self.stored[player.id] = player
 
@@ -36,6 +42,14 @@ class FakeUnitOfWork:
         self.commits += 1
 
 
+class FakeClubLookup:
+    def __init__(self, existing_ids: set[int]) -> None:
+        self._existing_ids = existing_ids
+
+    def exists(self, club_id: int) -> bool:
+        return club_id in self._existing_ids
+
+
 @pytest.fixture
 def player_repository() -> InMemoryPlayerRepository:
     return InMemoryPlayerRepository()
@@ -44,6 +58,11 @@ def player_repository() -> InMemoryPlayerRepository:
 @pytest.fixture
 def unit_of_work() -> FakeUnitOfWork:
     return FakeUnitOfWork()
+
+
+@pytest.fixture
+def club_lookup() -> FakeClubLookup:
+    return FakeClubLookup(existing_ids={1, 2, 3})
 
 
 @pytest.fixture

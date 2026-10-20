@@ -1,15 +1,15 @@
 # Define o formato dos dados que são recebidos e enviados pela API, incluindo validação e serialização.
 import string
-import unicodedata
 from typing import Annotated, Self
 
 from pydantic import AfterValidator, BaseModel, BeforeValidator, Field
 
 from app.modules.players.application.list_players import PlayersPage
+from app.modules.players.application.public_operations import PlayerView
 from app.modules.players.application.update_player import PlayerProfileChanges
 from app.modules.players.domain.entities import Attributes, Player, PlayerRegistration
 from app.modules.players.domain.enums import PhysicalCondition, Position
-from app.shared.domain.text import clean_text
+from app.shared.domain.text import clean_text, has_letter
 
 MIN_NAME_LENGTH = 3
 MAX_NAME_LENGTH = 100
@@ -26,17 +26,13 @@ def _to_strict_integer(value: object) -> object:
     return value
 
 
-def _has_letter(word: str) -> bool:
-    return any(unicodedata.category(char).startswith("L") for char in word)
-
-
 def _clean_player_name(value: str) -> str:
     name = clean_text(value)
     if not MIN_NAME_LENGTH <= len(name) <= MAX_NAME_LENGTH:
         raise ValueError(f"deve ter de {MIN_NAME_LENGTH} a {MAX_NAME_LENGTH} caracteres")
     if any(char in string.digits for char in name):
         raise ValueError("não pode ter dígitos")
-    if sum(_has_letter(part) for part in name.split(" ")) < MIN_NAME_WORDS:
+    if sum(has_letter(part) for part in name.split(" ")) < MIN_NAME_WORDS:
         raise ValueError(f"deve ter pelo menos {MIN_NAME_WORDS} palavras")
     return name
 
@@ -115,26 +111,30 @@ class PlayerResponse(BaseModel):
     club_id: int | None
 
     @classmethod
-    def from_entity(cls, player: Player) -> Self:
+    def from_view(cls, view: PlayerView) -> Self:
         return cls(
-            id=player.id,
-            name=player.name,
-            position=player.position,
-            agility=player.agility,
-            age=player.age,
-            condition=player.condition,
-            base_value=float(player.base_value),
-            market_value=float(player.market_value),
-            pace=player.attributes.pace,
-            shooting=player.attributes.shooting,
-            passing=player.attributes.passing,
-            dribbling=player.attributes.dribbling,
-            defending=player.attributes.defending,
-            physical=player.attributes.physical,
-            potential=player.potential,
-            overall=player.overall,
-            club_id=player.club_id,
+            id=view.id,
+            name=view.name,
+            position=view.position,
+            agility=view.agility,
+            age=view.age,
+            condition=view.condition,
+            base_value=float(view.base_value),
+            market_value=float(view.market_value),
+            pace=view.attributes.pace,
+            shooting=view.attributes.shooting,
+            passing=view.attributes.passing,
+            dribbling=view.attributes.dribbling,
+            defending=view.attributes.defending,
+            physical=view.attributes.physical,
+            potential=view.potential,
+            overall=view.overall,
+            club_id=view.club_id,
         )
+
+    @classmethod
+    def from_entity(cls, player: Player) -> Self:
+        return cls.from_view(PlayerView.from_entity(player))
 
 
 class PageMeta(BaseModel):
