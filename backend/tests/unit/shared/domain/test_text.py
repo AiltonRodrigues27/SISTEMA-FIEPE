@@ -1,6 +1,6 @@
 import pytest
 
-from app.shared.domain.text import clean_text, normalize_text
+from app.shared.domain.text import clean_text, has_letter, normalize_text
 
 
 @pytest.mark.parametrize(
@@ -46,6 +46,21 @@ def test_clean_text_rejects_control_characters(raw) -> None:
 )
 def test_normalize_text_lowers_case_and_removes_accents(raw, normalized) -> None:
     assert normalize_text(raw) == normalized
+
+
+@pytest.mark.parametrize(
+    ("word", "expected"),
+    [
+        pytest.param("Lua", True, id="plain_word"),
+        pytest.param("Zé", True, id="accented_letter"),
+        pytest.param("a1", True, id="letter_and_digit"),
+        pytest.param("-", False, id="hyphen"),
+        pytest.param("123", False, id="digits"),
+        pytest.param("", False, id="empty"),
+    ],
+)
+def test_has_letter_tells_if_a_word_has_a_unicode_letter(word, expected) -> None:
+    assert has_letter(word) is expected
 
 
 def test_normalize_text_makes_accented_and_plain_names_equal() -> None:
