@@ -1,7 +1,9 @@
 from sqlalchemy.orm import Session
 
+from app.shared.application.unit_of_work import UnitOfWork
 
-class SqlAlchemyUnitOfWork:
+
+class SqlAlchemyUnitOfWork(UnitOfWork):
     def __init__(self, session: Session) -> None:
         self._session = session
 
