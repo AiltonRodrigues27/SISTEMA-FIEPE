@@ -5,9 +5,10 @@ from sqlalchemy.orm import Session
 from app.modules.players.adapters.outbound.persistence.models import PlayerModel
 from app.modules.players.domain.entities import Attributes, Player
 from app.modules.players.domain.enums import PhysicalCondition, Position
+from app.modules.players.ports.repositories import PlayerRepository
 
 
-class SqlAlchemyPlayerRepository:
+class SqlAlchemyPlayerRepository(PlayerRepository):
     def __init__(self, session: Session) -> None:
         self._session = session
 
