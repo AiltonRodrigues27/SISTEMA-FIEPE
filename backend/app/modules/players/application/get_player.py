@@ -1,5 +1,5 @@
+from app.modules.players.application.player_lookup import get_existing_player
 from app.modules.players.domain.entities import Player
-from app.modules.players.domain.errors import PlayerNotFound
 from app.modules.players.ports.repositories import PlayerRepository
 
 
@@ -8,7 +8,4 @@ class GetPlayer:
         self._players = players
 
     def execute(self, player_id: int) -> Player:
-        player = self._players.get(player_id)
-        if player is None:
-            raise PlayerNotFound("Jogador não encontrado.")
-        return player
+        return get_existing_player(self._players, player_id)
