@@ -18,6 +18,12 @@ class InMemoryPlayerRepository:
     def get(self, player_id: int) -> Player | None:
         return self.stored.get(player_id)
 
+    def update(self, player: Player) -> None:
+        self.stored[player.id] = player
+
+    def mark_deleted(self, player_id: int) -> None:
+        del self.stored[player_id]
+
 
 class FakeUnitOfWork:
     def __init__(self) -> None:
@@ -47,3 +53,8 @@ def registration() -> PlayerRegistration:
         attributes=Attributes(70, 68, 82, 79, 55, 64),
         potential=86,
     )
+
+
+@pytest.fixture
+def saved_player(player_repository: InMemoryPlayerRepository, registration) -> Player:
+    return player_repository.add(Player.register(registration))
