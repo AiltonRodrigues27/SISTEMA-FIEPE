@@ -18,6 +18,9 @@ class InMemoryPlayerRepository:
     def get(self, player_id: int) -> Player | None:
         return self.stored.get(player_id)
 
+    def list_active(self) -> list[Player]:
+        return list(self.stored.values())
+
     def update(self, player: Player) -> None:
         self.stored[player.id] = player
 
