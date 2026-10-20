@@ -10,6 +10,9 @@ class PlayerRepository(Protocol):
     def get(self, player_id: int) -> Player | None:
         """Devolve o jogador ativo, ou None se não existir ou estiver excluído."""
 
+    def list_active(self) -> list[Player]:
+        """Devolve todos os jogadores ativos, sem os excluídos, em qualquer ordem."""
+
     def update(self, player: Player) -> None:
         """Grava as mudanças de um jogador que já existe."""
 

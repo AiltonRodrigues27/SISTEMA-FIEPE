@@ -28,6 +28,10 @@ class SqlAlchemyPlayerRepository(PlayerRepository):
         model = self._session.scalars(statement).first()
         return _to_entity(model) if model is not None else None
 
+    def list_active(self) -> list[Player]:
+        statement = select(PlayerModel).where(PlayerModel.deleted_at.is_(None))
+        return [_to_entity(model) for model in self._session.scalars(statement)]
+
     def update(self, player: Player) -> None:
         model = self._session.get(PlayerModel, player.id)
         if model is None:

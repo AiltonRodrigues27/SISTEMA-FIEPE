@@ -1,3 +1,5 @@
+from dataclasses import replace
+
 from app.modules.players.adapters.outbound.persistence.models import PlayerModel
 from app.modules.players.adapters.outbound.persistence.repository import (
     SqlAlchemyPlayerRepository,
@@ -54,3 +56,13 @@ def test_mark_deleted_hides_the_player_but_keeps_the_row(session):
     row = session.get(PlayerModel, saved.id)
     assert row is not None
     assert row.deleted_at is not None
+
+
+def test_list_active_returns_only_the_players_that_were_not_deleted(session):
+    repository = SqlAlchemyPlayerRepository(session)
+    kept = repository.add(Player.register(REGISTRATION))
+    deleted = repository.add(Player.register(replace(REGISTRATION, name="Beto Souza")))
+    repository.mark_deleted(deleted.id)
+    session.expire_all()
+
+    assert repository.list_active() == [kept]
