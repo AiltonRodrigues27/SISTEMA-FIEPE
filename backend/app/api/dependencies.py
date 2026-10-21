@@ -13,8 +13,15 @@ from app.modules.clubs.adapters.outbound.persistence.repository import SqlAlchem
 from app.modules.clubs.application.get_club import GetClub
 from app.modules.clubs.application.list_clubs import ListClubs
 from app.modules.clubs.application.public_operations import ClubsPublicOperations
+from app.modules.league.adapters.outbound.persistence.match_repository import (
+    SqlAlchemyMatchRepository,
+)
 from app.modules.league.adapters.outbound.persistence.repository import SqlAlchemyLineupRepository
 from app.modules.league.application.get_lineup import GetLineup
+from app.modules.league.application.get_match import GetMatch
+from app.modules.league.application.get_standings import GetStandings
+from app.modules.league.application.list_matches import ListMatches
+from app.modules.league.application.play_match import PlayMatch
 from app.modules.league.application.public_operations import LeaguePublicOperations
 from app.modules.league.application.set_lineup import SetLineup
 from app.modules.market.adapters.outbound.persistence.repository import (
@@ -128,6 +135,30 @@ def build_get_lineup(session: Annotated[Session, Depends(get_db)]) -> GetLineup:
         _clubs_operations(session),
         SqlAlchemyLineupRepository(session),
     )
+
+
+def build_play_match(
+    session: Annotated[Session, Depends(get_db)], clock: Annotated[Clock, Depends(get_clock)]
+) -> PlayMatch:
+    return PlayMatch(
+        build_get_lineup(session),
+        _clubs_operations(session),
+        SqlAlchemyMatchRepository(session),
+        clock,
+        SqlAlchemyUnitOfWork(session),
+    )
+
+
+def build_list_matches(session: Annotated[Session, Depends(get_db)]) -> ListMatches:
+    return ListMatches(_clubs_operations(session), SqlAlchemyMatchRepository(session))
+
+
+def build_get_match(session: Annotated[Session, Depends(get_db)]) -> GetMatch:
+    return GetMatch(_clubs_operations(session), SqlAlchemyMatchRepository(session))
+
+
+def build_get_standings(session: Annotated[Session, Depends(get_db)]) -> GetStandings:
+    return GetStandings(_clubs_operations(session), SqlAlchemyMatchRepository(session))
 
 
 def build_sell_player(
