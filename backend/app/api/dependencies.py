@@ -17,6 +17,7 @@ from app.modules.market.adapters.outbound.persistence.repository import (
     SqlAlchemyTransactionRepository,
 )
 from app.modules.market.application.buy_player import BuyPlayer
+from app.modules.market.application.list_transactions import ListTransactions
 from app.modules.market.application.sell_player import SellPlayer
 from app.modules.players.adapters.outbound.persistence.repository import (
     SqlAlchemyPlayerRepository,
@@ -82,6 +83,14 @@ def build_buy_player(
         SqlAlchemyTransactionRepository(session),
         clock,
         SqlAlchemyUnitOfWork(session),
+    )
+
+
+def build_list_transactions(session: Annotated[Session, Depends(get_db)]) -> ListTransactions:
+    return ListTransactions(
+        _players_operations(session),
+        _clubs_operations(session),
+        SqlAlchemyTransactionRepository(session),
     )
 
 

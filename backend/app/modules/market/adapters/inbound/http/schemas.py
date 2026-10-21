@@ -4,7 +4,9 @@ from pydantic import BaseModel
 
 from app.api.strict_types import BrasiliaDateTime, ResourceId
 from app.modules.market.application.buy_player import PurchaseResult
+from app.modules.market.application.list_transactions import TransactionHistory
 from app.modules.market.application.sell_player import SaleResult
+from app.modules.market.domain.history import TransactionSummary
 from app.modules.market.domain.transaction import Transaction
 from app.shared.domain.brasilia_time import format_api_datetime
 
@@ -83,4 +85,34 @@ class SaleResponse(TransactionResponse):
             penalty_rate=termination.penalty_percent,
             contract_status=termination.status,
             club_cash=float(result.club_cash),
+        )
+
+
+class SummaryResponse(BaseModel):
+    total_spent: float
+    total_received: float
+    total_fees: float
+    total_penalties: float
+    total_profit: float
+
+    @classmethod
+    def from_summary(cls, summary: TransactionSummary) -> Self:
+        return cls(
+            total_spent=float(summary.total_spent),
+            total_received=float(summary.total_received),
+            total_fees=float(summary.total_fees),
+            total_penalties=float(summary.total_penalties),
+            total_profit=float(summary.total_profit),
+        )
+
+
+class TransactionHistoryResponse(BaseModel):
+    data: list[TransactionResponse]
+    summary: SummaryResponse
+
+    @classmethod
+    def from_history(cls, history: TransactionHistory) -> Self:
+        return cls(
+            data=[TransactionResponse.from_transaction(item) for item in history.transactions],
+            summary=SummaryResponse.from_summary(history.summary),
         )
