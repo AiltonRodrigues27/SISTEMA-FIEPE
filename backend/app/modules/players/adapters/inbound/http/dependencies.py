@@ -8,7 +8,6 @@ from app.infrastructure.unit_of_work import SqlAlchemyUnitOfWork
 from app.modules.players.adapters.outbound.persistence.repository import (
     SqlAlchemyPlayerRepository,
 )
-from app.modules.players.application.change_player_condition import ChangePlayerCondition
 from app.modules.players.application.create_player import CreatePlayer
 from app.modules.players.application.delete_player import DeletePlayer
 from app.modules.players.application.get_player import GetPlayer
@@ -25,12 +24,6 @@ def build_get_player(session: Annotated[Session, Depends(get_db)]) -> GetPlayer:
 
 def build_update_player(session: Annotated[Session, Depends(get_db)]) -> UpdatePlayer:
     return UpdatePlayer(SqlAlchemyPlayerRepository(session), SqlAlchemyUnitOfWork(session))
-
-
-def build_change_player_condition(
-    session: Annotated[Session, Depends(get_db)],
-) -> ChangePlayerCondition:
-    return ChangePlayerCondition(SqlAlchemyPlayerRepository(session), SqlAlchemyUnitOfWork(session))
 
 
 def build_delete_player(session: Annotated[Session, Depends(get_db)]) -> DeletePlayer:

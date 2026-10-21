@@ -6,6 +6,7 @@ from app.modules.players.application.player_lookup import get_existing_player
 from app.modules.players.domain.entities import Attributes, Player
 from app.modules.players.domain.enums import PhysicalCondition, Position
 from app.modules.players.domain.listing import SortKey, sort_players
+from app.modules.players.ports.lineup_gateway import LineupGateway
 from app.modules.players.ports.repositories import PlayerRepository
 
 
@@ -43,8 +44,9 @@ class PlayerView:
 
 
 class PlayersPublicOperations:
-    def __init__(self, players: PlayerRepository) -> None:
+    def __init__(self, players: PlayerRepository, lineup: LineupGateway) -> None:
         self._players = players
+        self._lineup = lineup
 
     def list_by_club(self, club_id: int) -> list[PlayerView]:
         squad = sort_players(self._players.list_by_club(club_id), (SortKey.POSITION,))
@@ -75,4 +77,5 @@ class PlayersPublicOperations:
         player = get_existing_player(self._players, player_id)
         previous_club_id = player.release()
         self._players.update(player)
+        self._lineup.remove_player(player_id)
         return previous_club_id

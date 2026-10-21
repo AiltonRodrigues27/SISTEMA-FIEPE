@@ -13,6 +13,10 @@ from app.modules.clubs.adapters.outbound.persistence.repository import SqlAlchem
 from app.modules.clubs.application.get_club import GetClub
 from app.modules.clubs.application.list_clubs import ListClubs
 from app.modules.clubs.application.public_operations import ClubsPublicOperations
+from app.modules.league.adapters.outbound.persistence.repository import SqlAlchemyLineupRepository
+from app.modules.league.application.get_lineup import GetLineup
+from app.modules.league.application.public_operations import LeaguePublicOperations
+from app.modules.league.application.set_lineup import SetLineup
 from app.modules.market.adapters.outbound.persistence.repository import (
     SqlAlchemyTransactionRepository,
 )
@@ -22,6 +26,7 @@ from app.modules.market.application.sell_player import SellPlayer
 from app.modules.players.adapters.outbound.persistence.repository import (
     SqlAlchemyPlayerRepository,
 )
+from app.modules.players.application.change_player_condition import ChangePlayerCondition
 from app.modules.players.application.list_players import ListPlayers
 from app.modules.players.application.public_operations import PlayersPublicOperations
 from app.shared.application.clock import Clock
@@ -43,8 +48,12 @@ def get_clock() -> Clock:
     return SystemClock()
 
 
+def _league_operations(session: Session) -> LeaguePublicOperations:
+    return LeaguePublicOperations(SqlAlchemyLineupRepository(session))
+
+
 def _players_operations(session: Session) -> PlayersPublicOperations:
-    return PlayersPublicOperations(SqlAlchemyPlayerRepository(session))
+    return PlayersPublicOperations(SqlAlchemyPlayerRepository(session), _league_operations(session))
 
 
 def _clubs_operations(session: Session) -> ClubsPublicOperations:
@@ -57,6 +66,16 @@ def _clubs_operations(session: Session) -> ClubsPublicOperations:
 
 def build_list_players(session: Annotated[Session, Depends(get_db)]) -> ListPlayers:
     return ListPlayers(SqlAlchemyPlayerRepository(session), _clubs_operations(session))
+
+
+def build_change_player_condition(
+    session: Annotated[Session, Depends(get_db)],
+) -> ChangePlayerCondition:
+    return ChangePlayerCondition(
+        SqlAlchemyPlayerRepository(session),
+        SqlAlchemyUnitOfWork(session),
+        _league_operations(session),
+    )
 
 
 def build_list_clubs(session: Annotated[Session, Depends(get_db)]) -> ListClubs:
@@ -91,6 +110,23 @@ def build_list_transactions(session: Annotated[Session, Depends(get_db)]) -> Lis
         _players_operations(session),
         _clubs_operations(session),
         SqlAlchemyTransactionRepository(session),
+    )
+
+
+def build_set_lineup(session: Annotated[Session, Depends(get_db)]) -> SetLineup:
+    return SetLineup(
+        _players_operations(session),
+        _clubs_operations(session),
+        SqlAlchemyLineupRepository(session),
+        SqlAlchemyUnitOfWork(session),
+    )
+
+
+def build_get_lineup(session: Annotated[Session, Depends(get_db)]) -> GetLineup:
+    return GetLineup(
+        _players_operations(session),
+        _clubs_operations(session),
+        SqlAlchemyLineupRepository(session),
     )
 
 

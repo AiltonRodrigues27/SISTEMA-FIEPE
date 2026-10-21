@@ -1,5 +1,6 @@
 import pytest
 
+from app.modules.players.application.public_operations import PlayersPublicOperations
 from app.modules.players.domain.entities import Attributes, Player, PlayerRegistration
 from app.modules.players.domain.enums import Position
 
@@ -50,9 +51,29 @@ class FakeClubLookup:
         return club_id in self._existing_ids
 
 
+class FakeLineupGateway:
+    def __init__(self) -> None:
+        self.removed: list[int] = []
+
+    def remove_player(self, player_id: int) -> None:
+        self.removed.append(player_id)
+
+
 @pytest.fixture
 def player_repository() -> InMemoryPlayerRepository:
     return InMemoryPlayerRepository()
+
+
+@pytest.fixture
+def lineup_gateway() -> FakeLineupGateway:
+    return FakeLineupGateway()
+
+
+@pytest.fixture
+def operations(
+    player_repository: InMemoryPlayerRepository, lineup_gateway: FakeLineupGateway
+) -> PlayersPublicOperations:
+    return PlayersPublicOperations(player_repository, lineup_gateway)
 
 
 @pytest.fixture

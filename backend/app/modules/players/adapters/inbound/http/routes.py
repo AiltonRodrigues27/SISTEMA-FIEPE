@@ -2,10 +2,13 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request, Response, status
 
-from app.api.dependencies import build_list_players, parse_resource_id
+from app.api.dependencies import (
+    build_change_player_condition,
+    build_list_players,
+    parse_resource_id,
+)
 from app.api.error_docs import error_responses
 from app.modules.players.adapters.inbound.http.dependencies import (
-    build_change_player_condition,
     build_create_player,
     build_delete_player,
     build_get_player,
