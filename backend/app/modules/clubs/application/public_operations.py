@@ -107,6 +107,14 @@ class ClubsPublicOperations:
         self._clubs.update(club)
         return club.cash
 
+    def get_formation(self, club_id: int) -> str | None:
+        return self._get_club(club_id).formation
+
+    def set_formation(self, club_id: int, formation: str) -> None:
+        club = self._get_club(club_id)
+        club.formation = formation
+        self._clubs.update(club)
+
     def _get_club(self, club_id: int) -> Club:
         club = self._clubs.get(club_id)
         if club is None:
