@@ -2,8 +2,9 @@
 import string
 from typing import Annotated, Self
 
-from pydantic import AfterValidator, BaseModel, BeforeValidator, Field
+from pydantic import AfterValidator, BaseModel, Field
 
+from app.api.strict_types import StrictInt
 from app.modules.players.application.list_players import PlayersPage
 from app.modules.players.application.public_operations import PlayerView
 from app.modules.players.application.update_player import PlayerProfileChanges
@@ -14,16 +15,6 @@ from app.shared.domain.text import clean_text, has_letter
 MIN_NAME_LENGTH = 3
 MAX_NAME_LENGTH = 100
 MIN_NAME_WORDS = 2
-
-
-def _to_strict_integer(value: object) -> object:
-    if isinstance(value, bool) or not isinstance(value, int | float):
-        raise ValueError("deve ser um número inteiro")
-    if isinstance(value, float):
-        if not value.is_integer():
-            raise ValueError("deve ser um número inteiro, sem parte fracionária")
-        return int(value)
-    return value
 
 
 def _clean_player_name(value: str) -> str:
@@ -37,7 +28,6 @@ def _clean_player_name(value: str) -> str:
     return name
 
 
-StrictInt = Annotated[int, BeforeValidator(_to_strict_integer)]
 PlayerName = Annotated[str, AfterValidator(_clean_player_name)]
 Agility = Annotated[StrictInt, Field(ge=1, le=100)]
 Age = Annotated[StrictInt, Field(ge=16, le=45)]
