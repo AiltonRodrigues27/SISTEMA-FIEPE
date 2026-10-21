@@ -26,6 +26,9 @@ class FakePlayersOperations:
         self.assigned: list[tuple[int, int]] = []
         self.released: list[int] = []
 
+    def get_view(self, player_id: int) -> PlayerView:
+        return self._get(player_id)
+
     def get_free_player(self, player_id: int) -> PlayerView:
         view = self._get(player_id)
         if view.club_id is not None:
@@ -99,6 +102,16 @@ class InMemoryTransactionRepository:
 
     def club_sold_player(self, club_id: int, player_id: int) -> bool:
         return (club_id, player_id) in self.sold
+
+    def list_by_club(self, club_id: int, filters) -> list[Transaction]:
+        found = [
+            transaction
+            for transaction in self.added
+            if transaction.club_id == club_id
+            and (filters.types is None or transaction.type in filters.types)
+            and (filters.player_id is None or transaction.player_id == filters.player_id)
+        ]
+        return sorted(found, key=lambda item: (item.created_at, item.id), reverse=True)
 
 
 class FakeUnitOfWork:
