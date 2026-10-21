@@ -6,7 +6,7 @@
 ## Regras de código
 
 1. **Interfaces nas fronteiras, não em todo lugar.** `Protocol` (ou ABC quando precisar de comportamento compartilhado) em `ports/`, definido por quem consome. Onde não há fronteira (infra, outro módulo, algo que precisa ser trocado ou mockado), use o tipo concreto. Não crie interface, factory ou classe "porque Clean Code manda".
-2. **Nomes que explicam.** O nome diz o que a variável ou função representa. Sem `data`, `info`, `handle`, `process`, `tmp`. `snake_case` para funções e variáveis, `PascalCase` para classes, conforme PEP 8; nomes curtos só em escopo curto (`i`, `req`, `err`). **Identificadores em inglês:** classes, funções, variáveis, arquivos e nomes de teste ficam em inglês, iguais aos campos da API (`base_value`, `club_id`). Só ficam em português os nomes do banco definidos pelo enunciado (tabelas e colunas), os textos exibidos ao usuário (`message`) e as mensagens de commit. Misturar idiomas nos identificadores é punido no barema (B2).
+2. **Nomes que explicam.** O nome diz o que a variável ou função representa. Sem `data`, `info`, `handle`, `process`, `tmp`. `snake_case` para funções e variáveis, `PascalCase` para classes, conforme PEP 8; nomes curtos só em escopo curto (`i`, `req`, `err`). **Identificadores em inglês:** classes, funções, variáveis, arquivos e nomes de teste ficam em inglês, iguais aos campos da API (`base_value`, `club_id`). Só ficam em português os nomes do banco definidos pelo enunciado (tabelas e colunas), os valores de lista do enunciado (membros dos enums, como `GOL`, `APTO` e `COMPRA`), os textos exibidos ao usuário (`message`) e as mensagens de commit. Misturar idiomas nos identificadores é punido no barema (B2).
 3. **Funções pequenas.** Uma função faz uma coisa bem definida. Se precisa de "e" para descrevê-la, divida.
 4. **Responsabilidade única.** Router (endpoint FastAPI) converte HTTP em chamada de caso de uso e o resultado em `response_model`. Caso de uso coordena o fluxo, e a regra de negócio fica no `domain`. Adapter de persistência (que implementa a porta de repositório) fala com o banco. Integração externa fica atrás de uma porta.
 5. **Simples primeiro.** Sem metaclasses, decorators mágicos, herança elaborada ou generics sem necessidade concreta e presente.
@@ -23,7 +23,7 @@
 16. **Dependência explícita.** Toda dependência chega por construtor ou `Depends()` do FastAPI (`XService(repo, clock)`). Nada de variável global, estado de módulo com efeito colateral ou singleton escondido. Relógio, gerador de ID e similares também são injetados.
 17. **Testável.** Regra isolada de I/O é fácil de testar. Se está difícil de testar, o design está errado: ajuste o design, não o teste.
 18. **Poucos efeitos colaterais.** O nome da função anuncia o que ela faz. Nada de função `validar` que também grava.
-19. **Refatore continuamente.** Funcionando não é terminado. Ao tocar numa área, deixe-a melhor, mas em commit separado do da feature.
+<!-- 19. **Refatore continuamente.** Funcionando não é terminado. Ao tocar numa área, deixe-a melhor, mas em commit separado do da feature. -->
 
 ## Arquitetura (Clean Architecture + Monólito Modular)
 
@@ -53,7 +53,6 @@ Nada entra sem teste. O teste prova que a implementação está certa.
 ## Commits
 
 - **Graduais: uma unidade pequena por commit** (um arquivo, uma regra ou uma rota). O projeto compila e os testes passam em cada commit.
-- O barema exige pelo menos 10 commits por pasta (`backend/` e `frontend/`), em pelo menos 3 dias de envio diferentes, com no máximo metade de mensagens genéricas. Dar push ao fim de cada dia.
 - Refactor, formatação e feature não se misturam no mesmo commit.
 - Mensagem em Conventional Commits, em português, no imperativo: `feat(players): cria cálculo do valor de mercado`.
 - Escopo = módulo (`players`, `clubs`, `market`, `league`) ou área (`infra`, `db`, `api`, `docs`).
