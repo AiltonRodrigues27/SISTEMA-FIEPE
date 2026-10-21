@@ -106,14 +106,20 @@ class Player:
             raise InvalidConditionTransition("Jogador DOENTE não pode passar direto para APTO.")
         self.condition = new_condition
 
-    def assign_to(self, club_id: int) -> None:
+    def ensure_is_free(self) -> None:
         if not self.is_free:
             raise PlayerNotFree("O jogador já tem clube.")
+
+    def ensure_has_club(self) -> None:
+        if self.is_free:
+            raise PlayerIsFree("Jogador livre não pode ser vendido.")
+
+    def assign_to(self, club_id: int) -> None:
+        self.ensure_is_free()
         self.club_id = club_id
 
     def release(self) -> int:
-        if self.club_id is None:
-            raise PlayerIsFree("Jogador livre não pode ser vendido.")
+        self.ensure_has_club()
         previous_club_id = self.club_id
         self.club_id = None
         return previous_club_id
