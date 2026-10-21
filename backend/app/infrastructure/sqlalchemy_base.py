@@ -2,4 +2,7 @@ from sqlalchemy.orm import DeclarativeBase
 
 
 class Base(DeclarativeBase):
-    """Classe-mae de todo modelo SQLAlchemy de persistencia (app/infrastructure/persistence/models/)."""
+    """Classe-mãe dos modelos SQLAlchemy.
+
+    Cada módulo declara os seus em adapters/outbound/persistence/models.py.
+    """
