@@ -13,6 +13,9 @@ class ClubRepository(Protocol):
     def list_all(self) -> list[Club]:
         """Devolve todos os clubes, em qualquer ordem."""
 
+    def update(self, club: Club) -> None:
+        """Grava as mudanças de um clube que já existe (caixa e formação)."""
+
     def count(self) -> int:
         """Devolve quantos clubes existem."""
 

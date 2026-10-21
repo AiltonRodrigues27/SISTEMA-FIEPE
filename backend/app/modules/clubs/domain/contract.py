@@ -1,10 +1,13 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timedelta
 from decimal import Decimal
 from enum import StrEnum
+from typing import Self
 
+from app.modules.clubs.domain.errors import InvalidLoyaltyDate
 from app.shared.domain.rounding import round_half_up
 
+MAX_LOYALTY_DAYS = 1095
 MAX_PENALTY = Decimal("10.00")
 SHORT_TERM_MAX_DAYS = 30
 MEDIUM_TERM_MAX_DAYS = 180
@@ -29,6 +32,35 @@ class Contract:
     status: ContractStatus
     started_at: datetime
     ended_at: datetime | None
+
+    @classmethod
+    def open(
+        cls,
+        *,
+        player_id: int,
+        club_id: int,
+        purchase_value: Decimal,
+        loyalty_until: datetime,
+        now: datetime,
+    ) -> Self:
+        if not now < loyalty_until <= now + timedelta(days=MAX_LOYALTY_DAYS):
+            raise InvalidLoyaltyDate(
+                f"O fim da fidelidade deve ser depois de agora e em até {MAX_LOYALTY_DAYS} dias."
+            )
+        return cls(
+            id=None,
+            player_id=player_id,
+            club_id=club_id,
+            purchase_value=purchase_value,
+            loyalty_until=loyalty_until,
+            status=ContractStatus.ATIVO,
+            started_at=now,
+            ended_at=None,
+        )
+
+    def close(self, now: datetime, penalty: Decimal) -> Self:
+        status = ContractStatus.RESCINDIDO if penalty > 0 else ContractStatus.ENCERRADO
+        return replace(self, status=status, ended_at=now)
 
 
 def remaining_days(loyalty_until: datetime, now: datetime) -> int:

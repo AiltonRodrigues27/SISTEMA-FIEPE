@@ -4,7 +4,11 @@ from sqlalchemy.orm import Session
 
 from app.modules.clubs.adapters.outbound.persistence.models import ClubModel
 from app.modules.clubs.domain.entities import Club
-from app.modules.clubs.domain.errors import AcronymAlreadyExists, ClubNameAlreadyExists
+from app.modules.clubs.domain.errors import (
+    AcronymAlreadyExists,
+    ClubNameAlreadyExists,
+    ClubNotFound,
+)
 from app.modules.clubs.ports.repositories import ClubRepository
 from app.shared.domain.errors import DomainError
 
@@ -34,6 +38,14 @@ class SqlAlchemyClubRepository(ClubRepository):
     def get(self, club_id: int) -> Club | None:
         model = self._session.get(ClubModel, club_id)
         return _to_entity(model) if model is not None else None
+
+    def update(self, club: Club) -> None:
+        model = self._session.get(ClubModel, club.id)
+        if model is None:
+            raise ClubNotFound("Clube não encontrado.")
+        model.cash = club.cash
+        model.formation = club.formation
+        self._session.flush()
 
     def list_all(self) -> list[Club]:
         return [_to_entity(model) for model in self._session.scalars(select(ClubModel))]

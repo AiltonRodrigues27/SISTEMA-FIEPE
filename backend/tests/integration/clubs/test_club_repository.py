@@ -1,14 +1,15 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 
 import pytest
+from sqlalchemy.exc import IntegrityError
 
 from app.modules.clubs.adapters.outbound.persistence.contract_repository import (
     SqlAlchemyContractRepository,
 )
 from app.modules.clubs.adapters.outbound.persistence.models import ContractModel
 from app.modules.clubs.adapters.outbound.persistence.repository import SqlAlchemyClubRepository
-from app.modules.clubs.domain.contract import ContractStatus
+from app.modules.clubs.domain.contract import Contract, ContractStatus
 from app.modules.clubs.domain.entities import Club
 from app.modules.clubs.domain.errors import AcronymAlreadyExists, ClubNameAlreadyExists
 from app.modules.players.adapters.outbound.persistence.repository import (
@@ -100,6 +101,83 @@ def test_the_database_accepts_a_name_that_differs_by_accent(session):
     saved = repository.add(Club.register("Aguias FC", "AFC"))
 
     assert saved.id is not None
+
+
+def test_update_persists_the_cash(session):
+    repository = SqlAlchemyClubRepository(session)
+    saved = repository.add(Club.register("Águias FC", "AGU"))
+
+    saved.debit(Decimal("38.85"))
+    repository.update(saved)
+    session.expire_all()
+
+    assert repository.get(saved.id).cash == Decimal("261.15")
+
+
+MOMENT = datetime(2026, 11, 2, 10, 15, tzinfo=BRASILIA)
+
+
+def open_contract(player, club):
+    return Contract.open(
+        player_id=player.id,
+        club_id=club.id,
+        purchase_value=Decimal("37.00"),
+        loyalty_until=datetime(2027, 3, 2, 10, 15, tzinfo=BRASILIA),
+        now=MOMENT,
+    )
+
+
+def test_add_contract_assigns_id_and_get_active_by_player_finds_it(session):
+    club = SqlAlchemyClubRepository(session).add(Club.register("Águias FC", "AGU"))
+    player = SqlAlchemyPlayerRepository(session).add(Player.register(REGISTRATION))
+    repository = SqlAlchemyContractRepository(session)
+
+    saved = repository.add(open_contract(player, club))
+    session.expire_all()
+
+    assert saved.id is not None
+    assert repository.get_active_by_player(player.id) == saved
+
+
+def test_get_active_by_player_returns_none_for_a_player_without_contract(session):
+    assert SqlAlchemyContractRepository(session).get_active_by_player(999_999) is None
+
+
+def test_update_closes_the_contract_and_it_stops_being_active(session):
+    club = SqlAlchemyClubRepository(session).add(Club.register("Águias FC", "AGU"))
+    player = SqlAlchemyPlayerRepository(session).add(Player.register(REGISTRATION))
+    repository = SqlAlchemyContractRepository(session)
+    saved = repository.add(open_contract(player, club))
+    later = MOMENT + timedelta(days=3)
+
+    repository.update(saved.close(later, Decimal("4.00")))
+    session.expire_all()
+
+    assert repository.get_active_by_player(player.id) is None
+    row = session.get(ContractModel, saved.id)
+    assert (row.status, row.ended_at) == ("RESCINDIDO", later)
+
+
+def test_a_player_can_have_a_new_active_contract_after_the_old_one_was_closed(session):
+    club = SqlAlchemyClubRepository(session).add(Club.register("Águias FC", "AGU"))
+    player = SqlAlchemyPlayerRepository(session).add(Player.register(REGISTRATION))
+    repository = SqlAlchemyContractRepository(session)
+    first = repository.add(open_contract(player, club))
+    repository.update(first.close(MOMENT + timedelta(days=3), Decimal("0.00")))
+
+    second = repository.add(open_contract(player, club))
+
+    assert repository.get_active_by_player(player.id) == second
+
+
+def test_the_database_refuses_two_active_contracts_for_the_same_player(session):
+    club = SqlAlchemyClubRepository(session).add(Club.register("Águias FC", "AGU"))
+    player = SqlAlchemyPlayerRepository(session).add(Player.register(REGISTRATION))
+    repository = SqlAlchemyContractRepository(session)
+    repository.add(open_contract(player, club))
+
+    with pytest.raises(IntegrityError):
+        repository.add(open_contract(player, club))
 
 
 def test_list_active_by_club_returns_only_the_active_contracts_of_that_club(session):

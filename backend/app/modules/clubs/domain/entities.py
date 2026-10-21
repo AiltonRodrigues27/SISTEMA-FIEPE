@@ -2,11 +2,12 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import Self
 
-from app.modules.clubs.domain.errors import InvalidClubData
+from app.modules.clubs.domain.errors import InsufficientCash, InvalidClubData, SquadFull
 from app.shared.domain.text import normalize_text
 
 INITIAL_CASH = Decimal("300.00")
 MAX_CLUBS = 20
+MAX_SQUAD_SIZE = 12
 
 
 @dataclass
@@ -21,6 +22,18 @@ class Club:
     def register(cls, name: str, acronym: str) -> Self:
         _ensure_acronym_matches_name(name, acronym)
         return cls(id=None, name=name, acronym=acronym, cash=INITIAL_CASH, formation=None)
+
+    def ensure_squad_has_room(self, squad_size: int) -> None:
+        if squad_size >= MAX_SQUAD_SIZE:
+            raise SquadFull(f"O elenco já tem {MAX_SQUAD_SIZE} jogadores.")
+
+    def debit(self, amount: Decimal) -> None:
+        if amount > self.cash:
+            raise InsufficientCash("O caixa do clube não cobre o valor.")
+        self.cash -= amount
+
+    def credit(self, amount: Decimal) -> None:
+        self.cash += amount
 
 
 @dataclass(frozen=True)

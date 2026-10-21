@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from dataclasses import replace
 from datetime import datetime
 from decimal import Decimal
 
@@ -26,6 +27,9 @@ class InMemoryClubRepository:
     def get(self, club_id: int) -> Club | None:
         return self.stored.get(club_id)
 
+    def update(self, club: Club) -> None:
+        self.stored[club.id] = club
+
     def list_all(self) -> list[Club]:
         return list(self.stored.values())
 
@@ -42,6 +46,20 @@ class InMemoryClubRepository:
 class InMemoryContractRepository:
     def __init__(self) -> None:
         self.stored: list[Contract] = []
+
+    def add(self, contract: Contract) -> Contract:
+        saved = replace(contract, id=len(self.stored) + 1)
+        self.stored.append(saved)
+        return saved
+
+    def get_active_by_player(self, player_id: int) -> Contract | None:
+        for contract in self.stored:
+            if contract.player_id == player_id and contract.status is ContractStatus.ATIVO:
+                return contract
+        return None
+
+    def update(self, contract: Contract) -> None:
+        self.stored = [contract if stored.id == contract.id else stored for stored in self.stored]
 
     def list_active_by_club(self, club_id: int) -> list[Contract]:
         return [
