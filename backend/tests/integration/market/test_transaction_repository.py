@@ -1,4 +1,5 @@
-from datetime import datetime
+from dataclasses import replace
+from datetime import datetime, timedelta
 from decimal import Decimal
 
 from app.modules.clubs.adapters.outbound.persistence.repository import SqlAlchemyClubRepository
@@ -8,7 +9,8 @@ from app.modules.market.adapters.outbound.persistence.repository import (
     SqlAlchemyTransactionRepository,
 )
 from app.modules.market.domain.calculations import calculate_sale_outcome
-from app.modules.market.domain.transaction import Transaction
+from app.modules.market.domain.history import TransactionFilters
+from app.modules.market.domain.transaction import Transaction, TransactionType
 from app.modules.players.adapters.outbound.persistence.repository import (
     SqlAlchemyPlayerRepository,
 )
@@ -86,6 +88,57 @@ def test_add_stores_a_sale_with_profit_and_penalty(session):
         Decimal("3.00"),
         Decimal("35.70"),
     )
+
+
+def test_list_by_club_orders_from_the_most_recent_and_breaks_ties_by_id(session):
+    club = SqlAlchemyClubRepository(session).add(Club.register("Águias FC", "AGU"))
+    player = SqlAlchemyPlayerRepository(session).add(Player.register(REGISTRATION))
+    repository = SqlAlchemyTransactionRepository(session)
+    first = repository.add(purchase(club, player))
+    same_moment = repository.add(purchase(club, player))
+    sold = repository.add(replace(sale(club, player), created_at=MOMENT + timedelta(days=3)))
+    session.expire_all()
+
+    found = repository.list_by_club(club.id, TransactionFilters())
+
+    assert [item.id for item in found] == [sold.id, same_moment.id, first.id]
+    assert found[0].profit == Decimal("3.00")
+
+
+def test_list_by_club_filters_by_type_player_and_club(session):
+    clubs = SqlAlchemyClubRepository(session)
+    eagles = clubs.add(Club.register("Águias FC", "AGU"))
+    delta = clubs.add(Club.register("Delta FC", "DFC"))
+    players = SqlAlchemyPlayerRepository(session)
+    player = players.add(Player.register(REGISTRATION))
+    other_player = players.add(Player.register(REGISTRATION))
+    repository = SqlAlchemyTransactionRepository(session)
+    bought = repository.add(purchase(eagles, player))
+    sold = repository.add(sale(eagles, player))
+    other = repository.add(purchase(eagles, other_player))
+    repository.add(purchase(delta, player))
+
+    only_sales = repository.list_by_club(eagles.id, TransactionFilters(types=(TransactionType.VENDA,)))
+    only_player = repository.list_by_club(eagles.id, TransactionFilters(player_id=other_player.id))
+    everything = repository.list_by_club(eagles.id, TransactionFilters())
+
+    assert [item.id for item in only_sales] == [sold.id]
+    assert [item.id for item in only_player] == [other.id]
+    assert sorted(item.id for item in everything) == sorted([bought.id, sold.id, other.id])
+
+
+def test_list_by_club_keeps_the_transactions_of_a_deleted_player(session):
+    club = SqlAlchemyClubRepository(session).add(Club.register("Águias FC", "AGU"))
+    players = SqlAlchemyPlayerRepository(session)
+    player = players.add(Player.register(REGISTRATION))
+    repository = SqlAlchemyTransactionRepository(session)
+    repository.add(purchase(club, player))
+    players.mark_deleted(player.id)
+    session.expire_all()
+
+    found = repository.list_by_club(club.id, TransactionFilters())
+
+    assert [item.player_name for item in found] == ["Meia Lua"]
 
 
 def test_club_sold_player_is_true_only_after_that_club_sold_that_player(session):
