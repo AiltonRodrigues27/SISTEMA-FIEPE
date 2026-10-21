@@ -3,7 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.error_docs import hide_validation_error_docs
 from app.api.exception_handlers import register_exception_handlers
+from app.api.request_logging import RequestLoggingMiddleware, configure_request_logging
 from app.api.router import api_router
+from app.infrastructure.clock import SystemClock
 from app.infrastructure.settings import settings
 
 API_DESCRIPTION = """
@@ -34,6 +36,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+# Registrado depois do CORS para ficar por fora e registrar também as respostas de pré-voo.
+configure_request_logging()
+app.add_middleware(RequestLoggingMiddleware, clock=SystemClock())
 
 register_exception_handlers(app)
 hide_validation_error_docs(app)
