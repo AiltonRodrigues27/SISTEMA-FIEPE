@@ -6,11 +6,8 @@ from sqlalchemy import engine_from_config, pool
 from app.infrastructure.settings import settings
 from app.infrastructure.sqlalchemy_base import Base
 
-# Importar os models registra as tabelas em Base.metadata, que o Alembic usa para gerar migrations.
-from app.modules.clubs.adapters.outbound.persistence import models as clubs_models  # noqa: F401
-from app.modules.league.adapters.outbound.persistence import models as league_models  # noqa: F401
-from app.modules.market.adapters.outbound.persistence import models as market_models  # noqa: F401
-from app.modules.players.adapters.outbound.persistence import models as players_models  # noqa: F401
+# Importar o registro carrega os models de todos os módulos em Base.metadata, que o Alembic usa.
+from app.infrastructure import model_registry  # noqa: F401
 
 config = context.config
 config.set_main_option("sqlalchemy.url", settings.database_url)
