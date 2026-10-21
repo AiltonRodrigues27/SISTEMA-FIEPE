@@ -1,4 +1,8 @@
-from app.shared.domain.errors import ConflictError
+from app.shared.domain.errors import ConflictError, InvalidDataError
+
+
+class InvalidTransactionQuery(InvalidDataError):
+    """Filtro do histórico de transações inválido (tipo ou jogador)."""
 
 
 class CashLimitExceeded(ConflictError):
