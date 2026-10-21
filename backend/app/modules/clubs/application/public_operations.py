@@ -107,6 +107,9 @@ class ClubsPublicOperations:
         self._clubs.update(club)
         return club.cash
 
+    def list_club_names(self) -> dict[int, str]:
+        return {club.id: club.name for club in self._clubs.list_all()}
+
     def get_formation(self, club_id: int) -> str | None:
         return self._get_club(club_id).formation
 
