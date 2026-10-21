@@ -118,7 +118,9 @@ def test_list_by_club_filters_by_type_player_and_club(session):
     other = repository.add(purchase(eagles, other_player))
     repository.add(purchase(delta, player))
 
-    only_sales = repository.list_by_club(eagles.id, TransactionFilters(types=(TransactionType.VENDA,)))
+    only_sales = repository.list_by_club(
+        eagles.id, TransactionFilters(types=(TransactionType.VENDA,))
+    )
     only_player = repository.list_by_club(eagles.id, TransactionFilters(player_id=other_player.id))
     everything = repository.list_by_club(eagles.id, TransactionFilters())
 

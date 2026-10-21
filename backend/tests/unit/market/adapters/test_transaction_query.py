@@ -38,9 +38,7 @@ def test_no_parameters_means_no_filters() -> None:
     [
         pytest.param("COMPRA", (TransactionType.COMPRA,), id="purchase_only"),
         pytest.param("VENDA", (TransactionType.VENDA,), id="sale_only"),
-        pytest.param(
-            "COMPRA,VENDA", (TransactionType.COMPRA, TransactionType.VENDA), id="both"
-        ),
+        pytest.param("COMPRA,VENDA", (TransactionType.COMPRA, TransactionType.VENDA), id="both"),
         pytest.param(
             "VENDA,COMPRA", (TransactionType.VENDA, TransactionType.COMPRA), id="both_reversed"
         ),

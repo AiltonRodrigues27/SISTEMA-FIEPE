@@ -47,7 +47,9 @@ class SqlAlchemyTransactionRepository(TransactionRepository):
             statement = statement.where(TransactionModel.type.in_(types))
         if filters.player_id is not None:
             statement = statement.where(TransactionModel.player_id == filters.player_id)
-        statement = statement.order_by(TransactionModel.created_at.desc(), TransactionModel.id.desc())
+        statement = statement.order_by(
+            TransactionModel.created_at.desc(), TransactionModel.id.desc()
+        )
         return [_to_entity(model) for model in self._session.scalars(statement)]
 
 

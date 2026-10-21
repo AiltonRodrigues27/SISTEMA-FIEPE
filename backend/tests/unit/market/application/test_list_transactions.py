@@ -67,9 +67,7 @@ def test_list_transactions_summary_respects_the_type_filter(
     add_purchase_and_sale(transactions)
     filters = TransactionFilters(types=(TransactionType.VENDA,))
 
-    history = build_use_case(players_operations, clubs_operations, transactions).execute(
-        1, filters
-    )
+    history = build_use_case(players_operations, clubs_operations, transactions).execute(1, filters)
 
     assert [item.type for item in history.transactions] == [TransactionType.VENDA]
     assert history.summary.total_spent == Decimal("0.00")
