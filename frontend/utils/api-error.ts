@@ -2,7 +2,7 @@ import { isAxiosError } from "axios";
 import type { ApiError } from "@/types/api.types";
 
 const NETWORK_ERROR_MESSAGE =
-  "Não foi possível conectar à API. Verifique se o servidor está no ar.";
+  "Não foi possível falar com a API. Verifique a conexão e tente de novo.";
 const UNEXPECTED_ERROR_MESSAGE = "A API devolveu um erro inesperado.";
 
 export function toApiError(error: unknown): ApiError {
