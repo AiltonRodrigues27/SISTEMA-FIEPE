@@ -9,12 +9,11 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { Suspense } from "react";
-import { FieldDecoration } from "@/components/home/field-decoration";
-import { LeagueBadge } from "@/components/home/league-badge";
-import { LeagueNumbers } from "@/components/home/league-numbers";
-import { loadLeagueSummary } from "@/components/home/league-summary";
-import { StartAction } from "@/components/home/start-action";
-import { StepCard } from "@/components/home/step-card";
+import { FieldDecoration } from "@/components/league/field-decoration";
+import { LeagueBadge } from "@/components/league/league-badge";
+import { LeagueNumbers } from "@/components/league/league-numbers";
+import { StartAction } from "@/components/league/start-action";
+import { StepCard } from "@/components/league/step-card";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const steps = [
@@ -53,14 +52,10 @@ const steps = [
 ];
 
 export default function HomePage() {
-  const summaryPromise = loadLeagueSummary();
-
   return (
     <main className="relative flex min-h-svh items-center justify-center overflow-x-clip px-4 py-8 xl:h-svh xl:overflow-hidden xl:p-0">
-      {/* Em xl o palco tem 1440 × 900, como o quadro do Figma, e é reduzido para
-          caber na janela. A conta usa 1320 × 820 (o palco sem 60 px de margem
-          em cada lado): a margem branca encolhe e o conteúdo cresce um pouco.
-          scale = menor razão entre janela e essa referência, no máximo 1. */}
+      {/* Em xl o palco é o quadro do Figma (1440 × 900) reduzido para caber na
+          janela; a referência 1320 × 820 tira a margem branca e cresce o conteúdo. */}
       <div className="relative flex w-full flex-col items-center gap-8 xl:h-225 xl:w-360 xl:shrink-0 xl:scale-[min(1,tan(atan2(100svh,820px)),tan(atan2(100vw,1320px)))] xl:justify-center">
         <FieldDecoration />
         <section className="relative flex w-full max-w-180 flex-col items-center gap-5.5 rounded-3xl bg-background px-6 py-8 xl:px-12">
@@ -70,10 +65,8 @@ export default function HomePage() {
               Passe
             </span>
           </div>
-          <Suspense
-            fallback={<Skeleton className="h-6.5 w-64 rounded-full" />}
-          >
-            <LeagueBadge summaryPromise={summaryPromise} />
+          <Suspense fallback={<Skeleton className="h-6.5 w-64 rounded-full" />}>
+            <LeagueBadge />
           </Suspense>
           <div className="flex w-full flex-col items-center gap-3 text-center">
             <h1 className="text-[28px] leading-9 font-semibold tracking-tight text-balance md:text-[40px] md:leading-12 md:whitespace-nowrap">
@@ -87,7 +80,7 @@ export default function HomePage() {
           </div>
           <StartAction />
           <Suspense fallback={<Skeleton className="h-4 w-80 max-w-full" />}>
-            <LeagueNumbers summaryPromise={summaryPromise} />
+            <LeagueNumbers />
           </Suspense>
         </section>
         <ol className="relative grid w-full max-w-180 grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 xl:flex xl:max-w-none xl:items-center xl:justify-center">
