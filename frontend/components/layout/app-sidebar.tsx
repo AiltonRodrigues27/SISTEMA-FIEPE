@@ -25,7 +25,7 @@ export function AppSidebar() {
   return (
     <Sidebar variant="inset">
       <SidebarHeader className="flex-row items-center gap-3 px-4 py-3">
-        <Image src="/brand/passe-mark.svg" alt="" width={32} height={32} />
+        <Image src="/passe-mark.svg" alt="" width={32} height={32} />
         <div className="flex flex-col">
           <span className="text-body-sm font-semibold">Passe</span>
           <span className="text-caption text-muted-foreground">

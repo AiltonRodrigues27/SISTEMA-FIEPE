@@ -60,7 +60,7 @@ export default function HomePage() {
         <FieldDecoration />
         <section className="relative flex w-full max-w-180 flex-col items-center gap-5.5 rounded-3xl bg-background px-6 py-8 xl:px-12">
           <div className="flex items-center gap-5">
-            <Image src="/brand/passe-mark.svg" alt="" width={56} height={56} />
+            <Image src="/passe-mark.svg" alt="" width={56} height={56} />
             <span className="text-[32px] leading-10 font-semibold tracking-[-0.03em]">
               Passe
             </span>
