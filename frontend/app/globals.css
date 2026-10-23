@@ -74,9 +74,11 @@
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  /* Raios do Figma para as classes que o shadcn (base-luma) usa: item de menu 6 px,
+     campo, botão e selo 8 px, cartão 14 px. */
+  --radius-2xl: 6px;
+  --radius-3xl: 8px;
+  --radius-4xl: 14px;
 }
 
 /* Estilos de texto do Figma. Corpo e legenda não fixam o peso: combine com font-medium ou font-semibold. */
@@ -184,5 +186,9 @@
   }
   html {
     @apply font-sans;
+  }
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
   }
 }
