@@ -1,6 +1,6 @@
 import type { ApiResult } from "@/types/api.types";
 import type { StandingRow } from "@/types/standings.types";
-import { api } from "@/utils/api";
+import { api } from "@/lib/api";
 import { toApiError } from "@/utils/api-error";
 
 export async function getStandings(): Promise<ApiResult<StandingRow[]>> {
