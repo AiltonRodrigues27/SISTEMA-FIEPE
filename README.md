@@ -200,7 +200,7 @@ Os valores de senha são apenas de desenvolvimento local.
 │   ├── pyproject.toml e poetry.lock
 │   └── .env.example
 └── frontend/
-    ├── app/                   # uma pasta por tela, só com page.tsx
+    ├── app/                   # uma pasta por tela (page.tsx), mais layout.tsx, not-found.tsx e globals.css
     ├── actions/               # Server Actions finas, um arquivo por recurso
     ├── components/
     │   ├── ui/                # componentes base do shadcn, ajustados ao Figma
@@ -213,6 +213,7 @@ Os valores de senha são apenas de desenvolvimento local.
     ├── hooks/                 # comportamento de tela no cliente (filtros da lista de jogadores)
     ├── utils/                 # dinheiro e datas, textos exibidos, menu, tradução de erro
     ├── lib/                   # cliente axios (URL base, tempo limite)
+    ├── package.json e package-lock.json   # dependências e versões travadas
     └── .env.example
 ```
 
@@ -225,7 +226,7 @@ Cada módulo de `backend/app/modules` tem as mesmas quatro camadas:
 
 Um módulo não acessa o interior de outro: eles conversam por "operações públicas" (classes pequenas, como `PlayersPublicOperations`), e a montagem de tudo fica em `backend/app/api/dependencies.py`.
 
-No frontend o caminho dos dados é sempre o mesmo: a página (Server Component) chama uma função de `services/`, que usa o cliente axios de `lib/api.ts` e devolve `{ ok: true, data }` ou `{ ok: false, status, message }`. Nenhum componente chama a API diretamente. As ações que alteram dados (cadastrar, comprar, vender...) são Server Actions finas em `actions/<recurso>.actions.ts`: validam com zod, repassam para o service e pedem para a tela se atualizar.
+No frontend o caminho dos dados é sempre o mesmo: a página (Server Component) chama uma função de `services/`, que usa o cliente axios de `lib/api.ts` e devolve `{ ok: true, data }` ou `{ ok: false, status, message }`. Nenhum componente chama a API diretamente. As ações que alteram dados (cadastrar, comprar, vender...) são Server Actions finas em `actions/<recurso>.actions.ts`: validam com zod, repassam para o service e pedem para a tela se atualizar. Compra e venda são a exceção: a tela só se atualiza quando o usuário fecha o recibo, para ele continuar visível.
 
 ### Bibliotecas do backend
 
@@ -247,7 +248,7 @@ No frontend o caminho dos dados é sempre o mesmo: a página (Server Component) 
 | Biblioteca | Motivo |
 | --- | --- |
 | Next.js e React | Framework e biblioteca da interface. As telas são Server Components: leem a API no servidor e mandam HTML pronto; só filtros, formulários, diálogos e abas rodam no navegador |
-| Tailwind CSS | Estilo da interface, escrito primeiro para o celular (375 px) e ampliado com `sm:`, `md:` e `lg:` |
+| Tailwind CSS, `@tailwindcss/turbopack` | Estilo da interface, escrito primeiro para o celular (375 px) e ampliado com `sm:`, `md:` e `lg:`. O segundo pacote faz o Turbopack (o empacotador do Next) processar o CSS do Tailwind (configurado em `next.config.ts`) |
 | shadcn, `@base-ui/react`, `class-variance-authority`, `cn`, `tw-animate-css` | Componentes de interface reutilizáveis (tabela, diálogo, seleção, abas) e suas variações de estilo; ajustados às cores e medidas do Figma |
 | lucide-react | Ícones |
 | TypeScript, ESLint | Tipagem e lint |
@@ -265,31 +266,30 @@ Detalhes que o enunciado não definiu, e como decidi.
 
 ### Backend
 
-1. **Arquitetura.** Monólito modular com quatro módulos (`players`, `clubs`, `market`, `league`) em camadas. Interface (porta) só onde existe uma fronteira de verdade: o banco e a comunicação entre módulos.
+1. **Arquitetura.** Monólito modular com arquitetura hexagonal e em camadas (`players`, `clubs`, `market`, `league`). Interface (ports) só onde existe realmente uma fronteira: o banco e a comunicação entre módulos.
 2. **Atomicidade.** Uma sessão de banco por requisição e **um único `commit` por operação** (compra, venda, escalação, partida, mudança para `DOENTE`). Todas as conferências acontecem **antes** de qualquer gravação; assim, uma operação recusada não grava nada.
 3. **Valores calculados nunca são gravados.** Valor de mercado, overall, valor do elenco, patrimônio, dias restantes, percentual de multa, resultado da partida, pontos e posição são calculados a cada consulta. Só ficam gravados o valor base (uma vez, no cadastro) e os valores do momento das transações, dos contratos e dos duelos.
 4. **Listagem de jogadores.** Como o valor de mercado não existe no banco, o repositório devolve os jogadores ativos e a busca, os filtros, a ordenação e a paginação são aplicados em Python (a ordenação em duas passadas estáveis, com desempate por nome e id).
 5. **Dinheiro.** `Decimal` em todo o cálculo; o arredondamento (meio para longe do zero) acontece uma única vez no resultado final. O `float` só aparece na resposta JSON.
-6. **Ordem dos erros.** Quando um pedido tem mais de um problema, a resposta segue a ordem: formato do corpo e dos parâmetros (`400`), recurso inexistente (`404`) e regra de negócio (`409`). Nunca se combinam dois erros.
+6. **Ordem dos erros.** Quando um pedido tem mais de um problema, a resposta segue a ordem: formato do corpo e dos parâmetros (`400`), recurso inexistente (`404`) e regra de negócio (`409`).
 7. **Ids e parâmetros estritos.** Id de recurso na URL só é aceito escrito com dígitos, sem zero à esquerda e até 2.147.483.647; qualquer outra forma (`01`, `abc`, `-1`) é um recurso inexistente (`404`). Nos corpos, inteiro como `3.0` é aceito e `"3"` (texto), `true` e `null` são recusados. Nos parâmetros de consulta (`?club_id=`, `?type=`...), valores como `01`, `+1` e `1e2` são recusados com `400`.
 8. **Relógio injetado.** A hora vem de um relógio passado ao caso de uso, não de uma chamada direta; os testes fixam a data e reproduzem os exemplos do enunciado. As datas usam o fuso `-03:00`.
 9. **Nome do clube único no banco.** Um índice único sobre `lower(nome)`: ignora maiúsculas e minúsculas, mas considera acentos (“Águias FC” e “Aguias FC” são nomes diferentes).
-10. **Escalação.** A formação fica na coluna `clubes.formacao`; os titulares, na tabela `escalacoes`, cuja restrição `UNIQUE(jogador_id)` garante um jogador em uma só escalação. O titular vendido ou que fica `DOENTE` sai da escalação na mesma transação; a formação permanece e o clube só volta a jogar quando escalar de novo.
+10. **Escalação.** A formação fica na coluna `clubes.formacao`; os titulares, na tabela `escalacoes`, cuja restrição `UNIQUE(jogador_id)` garante um jogador em uma só escalação. O titular vendido ou que fica `DOENTE` sai da escalação na mesma transação. A formação permanece e o clube só volta a jogar quando escalar de novo.
 11. **Partida.** O placar sai de 6 duelos, sem sorteio. O cálculo dos duelos e o da classificação ficam cada um num único arquivo do domínio (`duels.py` e `standings.py`).
-12. **Documentação da API.** Cada rota tem resumo, descrição e os erros possíveis no Swagger. O FastAPI documentaria sozinho um `422` que esta API nunca devolve (ela responde `400`); removi esse `422` do esquema.
+12. **Documentação da API.** Cada rota tem resumo, descrição e os erros possíveis no Swagger. O FastAPI documentaria sozinho um `422` que esta API nunca devolve (ela responde `400`), removi esse `422` do schema.
 13. **Erro inesperado.** Responde `500` com `{"message": "Erro interno do servidor."}`, sem detalhes internos, e a operação não grava nada.
 14. **CORS.** Restrito a uma origem, lida de `CORS_ORIGINS` (padrão `http://localhost:3000`).
-15. **Testes com o PostgreSQL de verdade.** Os testes de integração e de API usam o mesmo PostgreSQL do Compose (e não um banco de mentira), cada um dentro de uma transação desfeita no final.
-16. **Docker Compose na pasta `backend`.** O `docker-compose.yml` fica em `backend/`, ao lado do `Dockerfile` e do `.env.example`.
+15. **Testes com o PostgreSQL de verdade.** Os testes de integração e de API usam o mesmo PostgreSQL do Compose, cada um dentro de uma transação desfeita no final.
 
 ### Frontend
 
-1. **Server-first.** As telas são Server Components que leem a API no servidor; `"use client"` fica só nas folhas interativas (filtros, formulários, diálogos, seleção, abas). Nenhum componente chama `axios` ou `fetch`: só os `services/`.
+1. **Server-first.** As telas são Server Components que leem a API no servidor; `"use client"` fica só nas partes interativas (filtros, formulários, diálogos, seleção, abas). Nenhum componente chama `axios`: só os `services/`.
 2. **Filtros, ordenação, página e aba ficam na URL** (`?search=...&page=2`). A tela pode ser recarregada, compartilhada e o botão Voltar do navegador funciona.
-3. **Sem cache e sem SWR.** Os dados mudam a cada compra, venda ou partida, e um cache esquecido mostraria valor velho. Depois de cada ação, a Server Action pede para a tela buscar de novo e ela se atualiza sem recarregar a página.
+3. **Sem cache e sem SWR.** Os dados mudam a cada compra, venda ou partida, e um cache esquecido mostraria valor velho. Depois de cada ação, a tela busca os dados de novo e se atualiza sem recarregar a página: em geral é a própria Server Action que pede isso; na compra e na venda, a atualização espera o usuário fechar o recibo, para ele não sumir da tela.
 4. **Nada é recalculado na tela.** Valor de mercado, overall, taxa, multa, comissão, lucro, caixa, patrimônio, `summary`, placar, duelos e classificação vêm da API e são só exibidos. A única conta feita na tela é `valor + taxa` para mostrar o custo total da compra.
 5. **Listas na ordem da API.** Clubes, elenco, partidas e classificação não são reordenados no frontend.
-6. **Erros viram valor, não exceção.** Cada service devolve `{ ok: false, status, message }` quando a API recusa ou está fora do ar, e a tela mostra o `message` da API, sem texto genérico no lugar.
+6. **Erros viram valor, não exceção.** Cada service devolve `{ ok: false, status, message }` quando a API recusa ou está fora do ar, e a tela mostra o `message` da API.
 7. **Dinheiro e datas.** Dinheiro com duas casas e vírgula (`1.234,56`). Datas mostradas no horário de Brasília; o fim da fidelidade digitado na compra é enviado como `AAAA-MM-DDTHH:MM-03:00`.
 8. **Exportar CSV é um link direto** para o endpoint de exportação, com os mesmos filtros do histórico; o navegador baixa o arquivo que a API devolve.
 9. **Envio sem clique duplo.** Os formulários usam o `<form action>` do React 19 e o botão de envio fica desabilitado enquanto a ação roda.
@@ -309,11 +309,6 @@ Detalhes que o enunciado não definiu, e como decidi.
 | Mercado | `POST /players/{id}/buy`, `POST /players/{id}/sell`, `GET /clubs/{id}/transactions`, `GET /clubs/{id}/transactions/export` |
 | Liga | `PUT /clubs/{id}/lineup`, `GET /clubs/{id}/lineup`, `POST /matches`, `GET /matches`, `GET /matches/{id}`, `GET /standings` |
 
-Limitações conhecidas:
-
-- No Swagger, os parâmetros de consulta (`GET /players`, `GET /clubs`, `GET /clubs/{id}/transactions` e `GET /matches`) não aparecem como campos para preencher; estão descritos no texto de cada endpoint (eles são lidos do texto bruto da URL para a validação ser estrita).
-- Não há comando único do Docker para subir a interface junto com a API e o banco (diferencial opcional).
-
 **Frontend:** todas as telas do roteiro estão implementadas (jogadores, clubes, página do clube, compra, venda, histórico, escalação, partidas e classificação). O que ficou de fora:
 
 - **Testes automatizados.** Não há testes no frontend e, por isso, não há comando de testes. A conferência é feita por `npm run lint`, `npm run format:check`, `npx tsc --noEmit` e pelo uso da tela.
@@ -329,21 +324,12 @@ Limitações conhecidas:
 
 **Onde foi usado:**
 
-- no código do backend inteiro: os quatro módulos, a API, a configuração do banco, o Docker e o Ruff;
-- em todos os testes automatizados (unitários, de integração e de API);
-- no frontend inteiro: as telas, os componentes, os services, os schemas do zod, as Server Actions e a parte do frontend deste README. O Claude Code também leu o arquivo do Figma (pelo servidor MCP do Figma) para tirar cores, tipografia e medidas.
+- **Backend:** aceleração do desenvolvimento, com criação de métodos, funções, rotas, configuração do banco, Docker e Ruff.
+- **Testes automatizados:** todos (unitários, de integração e de API).
+- **Frontend:** aceleração do desenvolvimento, com componentização, chamadas à API, criação de funções, schemas do zod e Server Actions.
 
-**Como e por que:** usei para acelerar o desenvolvimento, principalmente a escrita do código. Eu defini o que construir e as decisões de arquitetura. O Claude Code propunha um plano para cada etapa, eu aprovava ou pedia mudança, e ele escrevia o código e os testes. Eu rodava os comandos (`pytest`, `ruff`, migrations, Docker) e levava os resultados de volta para ele corrigir.
+**Revisão do código:** todo o código gerado passou por uma revisão rigorosa minha. Não permiti que nada fosse gerado sem a minha aprovação consciente, nem aceitei um trecho sem saber o que ele faz.
 
-**Sobre os testes:** tenho conhecimento mínimo de testes unitários e não conhecia os outros tipos (testes de integração e de API). Por isso os testes do backend foram escritos pelo Claude Code. Eu os executo e uso o resultado (`poetry run pytest`) para validar o código, mas não os escrevi. No frontend não há testes automatizados: decidi não fazê-los. Estou ciente de que isso pode ser perguntado na entrevista.
+**Como e por que:** usei para acelerar o desenvolvimento, principalmente a escrita do código. Eu defini o que construir e as decisões de arquitetura. O Claude Code propunha um plano para cada etapa, eu aprovava ou pedia mudança, e ele escrevia o código e os testes. 
 
-**O que aceitei, alterei ou descartei (exemplos):**
-
-- **Listagem de jogadores.** Eu queria tudo no SQL. Depois de discutir, aceitei filtrar, ordenar e paginar em memória, porque o valor de mercado é calculado e não existe no banco. Também aceitei deixar a paginação na API em vez de no frontend.
-- **Exclusão de jogador.** Questionei se deveria apagar do banco; conferimos no enunciado (RN09) que a exclusão é lógica, e mantive assim.
-- **Repositórios.** Entre duas opções, escolhi que o repositório do SQLAlchemy herde explicitamente do contrato (`Protocol`).
-- **Frontend: renderização.** Escolhi que as telas sejam Server Components que leem a API no servidor, em vez de componentes de cliente com SWR, e que filtros e página fiquem na URL.
-- **Frontend: organização.** O Claude Code tinha criado um grupo de rotas `(app)` com um `layout.tsx` e arquivos `loading.tsx`. Pedi que cada tela ficasse direto em `app/<rota>/page.tsx` e que o "carregando" fosse um componente. Também pedi que os componentes ficassem em pastas por funcionalidade (`players`, `clubs`, `league`...), com `layout/` e `shared/` à parte, e que um carregador de dados e um tipo que ele tinha posto dentro de `components/` fossem para `services/` e `types/`.
-- **Frontend: onde chamar a API.** Ele tinha colocado funções de chamada dentro do cliente axios. Pedi que `lib/api.ts` só configure o cliente e que cada service faça as chamadas do seu recurso, com o próprio tratamento de erro.
-- **Frontend: tela inicial.** Refiz o campo de futebol da tela inicial várias vezes até as proporções ficarem iguais às do Figma.
-- **Erros do Claude Code que foram corrigidos.** Ele usou uma sintaxe do Python 3.12 que quebraria no 3.11 da imagem Docker; fez uma afirmação errada sobre o barema; e escreveu um teste com um parâmetro repetido. Os erros apareceram ao conferir o código, ao rodar os testes ou ao reler o enunciado, e foram corrigidos antes do commit.
+**Sobre os testes:** tenho conhecimento mínimo de testes unitários e não conhecia os outros tipos (testes de integração e de API). Por isso os testes do backend foram escritos exclusivamente pelo Claude Code. Eu os executo e uso o resultado (`poetry run pytest`) para validar o código, mas não os escrevi. No frontend não há testes automatizados: decidi não fazê-los.
